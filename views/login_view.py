@@ -332,14 +332,7 @@ class LoginView:
         secondary_buttons = ttk.Frame(buttons_frame, style='LoginCard.TFrame')
         secondary_buttons.pack(fill='x')
         
-        # Botón de prueba rápida (para desarrollo)
-        test_button = ttk.Button(
-            secondary_buttons,
-            text="🧪 Login de Prueba",
-            style='SecondaryButton.TButton',
-            command=self.login_prueba
-        )
-        test_button.pack(side='left', padx=(0, 10))
+       
         
         # Botón de información del sistema
         info_button = ttk.Button(
@@ -484,11 +477,7 @@ class LoginView:
         self.mostrar_estado_error(f"🔌 Error de conexión: {error}")
         self.login_button.config(state='normal')
     
-   def login_prueba(self):
-        """Login de prueba temporal"""
-        resultado = self.auth_controller.login_bypass_temporal("duena@gimnasio.com", "admin123")
-        if resultado["success"]:
-            self.manejar_resultado_login(resultado)
+   
     
     # ==================== VALIDACIONES ====================
     

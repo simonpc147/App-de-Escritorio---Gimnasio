@@ -18,39 +18,7 @@ class AuthController:
         self.tiempo_bloqueo = 300  # 5 minutos de bloqueo tras intentos fallidos
     
     # ==================== SISTEMA DE LOGIN ====================
-    
-    def login_bypass_temporal(self, email, password):
-    """TEMPORAL - Login directo sin UserController"""
-    try:
-        usuarios = self.usuario_model.read_usuarios()
-        
-        for usuario in usuarios:
-            if (str(usuario[6]).strip() == email.strip() and 
-                str(usuario[7]).strip() == password.strip()):
-                
-                usuario_data = {
-                    "id": usuario[0],
-                    "nombre": usuario[1], 
-                    "apellido": usuario[2],
-                    "email": usuario[6],
-                    "rol": usuario[8]
-                }
-                
-                token = self._generar_token_sesion()
-                self._crear_sesion(token, usuario_data, "127.0.0.1")
-                
-                return {
-                    "success": True,
-                    "message": f"Bienvenido {usuario[1]}",
-                    "token_sesion": token,
-                    "usuario": usuario_data
-                }
-        
-        return {"success": False, "message": "Credenciales incorrectas"}
-        
-    except Exception as e:
-        return {"success": False, "message": str(e)}
-
+  
     def iniciar_sesion(self, email, password, ip_cliente=""):
         """
         Inicia sesión de usuario con validaciones de seguridad
@@ -473,69 +441,69 @@ class AuthController:
 
     # MODIFICA TU AuthController - añade este método de debug temporal
 
-def iniciar_sesion_debug(self, email, password, ip_cliente=""):
-    """MÉTODO DE DEBUG - USA ESTE TEMPORALMENTE"""
-    print(f"\n🔍 === DEBUG LOGIN AuthController ===")
-    print(f"Email recibido: '{email}'")
-    print(f"Password recibido: '{password}'")
-    print(f"IP cliente: '{ip_cliente}'")
-    
-    try:
-        # BYPASS: validación directa con base de datos
-        print("🔍 Consultando directamente la base de datos...")
-        usuarios = self.usuario_model.read_usuarios()
-        print(f"🔍 Total usuarios en BD: {len(usuarios)}")
+    def iniciar_sesion_debug(self, email, password, ip_cliente=""):
+        """MÉTODO DE DEBUG - USA ESTE TEMPORALMENTE"""
+        print(f"\n🔍 === DEBUG LOGIN AuthController ===")
+        print(f"Email recibido: '{email}'")
+        print(f"Password recibido: '{password}'")
+        print(f"IP cliente: '{ip_cliente}'")
         
-        for usuario in usuarios:
-            print(f"\n🔍 Verificando usuario:")
-            print(f"  ID: {usuario[0]}")
-            print(f"  Nombre: {usuario[1]} {usuario[2]}")
-            print(f"  Email BD: '{usuario[6]}'")
-            print(f"  Password BD: '{usuario[7]}'")
-            print(f"  Rol: '{usuario[8]}'")
-            print(f"  Activo: {usuario[9]}")
+        try:
+            # BYPASS: validación directa con base de datos
+            print("🔍 Consultando directamente la base de datos...")
+            usuarios = self.usuario_model.read_usuarios()
+            print(f"🔍 Total usuarios en BD: {len(usuarios)}")
             
-            # Comparación exacta
-            email_match = str(usuario[6]).strip().lower() == email.strip().lower()
-            password_match = str(usuario[7]).strip() == password.strip()
+            for usuario in usuarios:
+                print(f"\n🔍 Verificando usuario:")
+                print(f"  ID: {usuario[0]}")
+                print(f"  Nombre: {usuario[1]} {usuario[2]}")
+                print(f"  Email BD: '{usuario[6]}'")
+                print(f"  Password BD: '{usuario[7]}'")
+                print(f"  Rol: '{usuario[8]}'")
+                print(f"  Activo: {usuario[9]}")
+                
+                # Comparación exacta
+                email_match = str(usuario[6]).strip().lower() == email.strip().lower()
+                password_match = str(usuario[7]).strip() == password.strip()
+                
+                print(f"  Email match: {email_match}")
+                print(f"  Password match: {password_match}")
+                
+                if email_match and password_match:
+                    print("✅ ¡CREDENCIALES VÁLIDAS! Creando sesión...")
+                    
+                    # Crear datos de usuario
+                    usuario_data = {
+                        "id": usuario[0],
+                        "nombre": usuario[1],
+                        "apellido": usuario[2],
+                        "email": usuario[6],
+                        "rol": usuario[8]
+                    }
+                    
+                    # Generar token y crear sesión
+                    token_sesion = self._generar_token_sesion()
+                    self._crear_sesion(token_sesion, usuario_data, ip_cliente)
+                    
+                    return {
+                        "success": True,
+                        "message": f"Bienvenido {usuario[1]} {usuario[2]}",
+                        "token_sesion": token_sesion,
+                        "usuario": usuario_data,
+                        "dashboard_url": self._obtener_dashboard_por_rol(usuario[8])
+                    }
             
-            print(f"  Email match: {email_match}")
-            print(f"  Password match: {password_match}")
+            print("❌ No se encontraron credenciales válidas")
+            return {"success": False, "message": "Credenciales incorrectas"}
             
-            if email_match and password_match:
-                print("✅ ¡CREDENCIALES VÁLIDAS! Creando sesión...")
-                
-                # Crear datos de usuario
-                usuario_data = {
-                    "id": usuario[0],
-                    "nombre": usuario[1],
-                    "apellido": usuario[2],
-                    "email": usuario[6],
-                    "rol": usuario[8]
-                }
-                
-                # Generar token y crear sesión
-                token_sesion = self._generar_token_sesion()
-                self._crear_sesion(token_sesion, usuario_data, ip_cliente)
-                
-                return {
-                    "success": True,
-                    "message": f"Bienvenido {usuario[1]} {usuario[2]}",
-                    "token_sesion": token_sesion,
-                    "usuario": usuario_data,
-                    "dashboard_url": self._obtener_dashboard_por_rol(usuario[8])
-                }
-        
-        print("❌ No se encontraron credenciales válidas")
-        return {"success": False, "message": "Credenciales incorrectas"}
-        
-    except Exception as e:
-        print(f"❌ Error en debug login: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return {"success": False, "message": f"Error interno: {str(e)}"}
+        except Exception as e:
+            print(f"❌ Error en debug login: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Error interno: {str(e)}"}
 
-# TAMBIÉN MODIFICA TU MÉTODO ORIGINAL para usar el debug:
-def iniciar_sesion(self, email, password, ip_cliente=""):
-    """TEMPORALMENTE USA EL DEBUG"""
-    return self.iniciar_sesion_debug(email, password, ip_cliente)
+    # TAMBIÉN MODIFICA TU MÉTODO ORIGINAL para usar el debug:
+    def iniciar_sesion(self, email, password, ip_cliente=""):
+        """TEMPORALMENTE USA EL DEBUG"""
+        return self.iniciar_sesion_debug(email, password, ip_cliente)

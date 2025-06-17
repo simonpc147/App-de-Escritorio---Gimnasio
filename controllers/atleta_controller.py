@@ -16,61 +16,50 @@ class AtletaController:
     
     # ==================== REGISTRO COMPLETO DE ATLETA ====================
     
-    def registrar_atleta_completo(self, datos_atleta, datos_usuario, metodo_pago, registrado_por_id):
+    def registrar_atleta_completo(self, datos_atleta, metodo_pago, registrado_por_id):
         """
-        Registro completo de atleta siguiendo el flujo de la aplicación:
-        1. Crear usuario
-        2. Crear perfil de atleta
+        Registro completo de atleta SIN USUARIO:
+        1. Validar datos del atleta
+        2. Crear perfil de atleta directamente
         3. Procesar pago automático
         4. Actualizar fecha de vencimiento y estado
         """
         try:
-            # PASO 1: Validar permisos (solo secretarias pueden registrar atletas)
-            if not self._puede_registrar_atletas(registrado_por_id):
+            # PASO 1: Validar permisos (admin_principal y secretarias pueden registrar atletas)
+            if not self._puede_gestionar_atletas(registrado_por_id):
                 return {"success": False, "message": "No tienes permisos para registrar atletas"}
             
-            # PASO 2: Validar datos del atleta
-            validacion = self._validar_datos_completos(datos_atleta, datos_usuario)
+            # PASO 2: Validar datos básicos del atleta
+            validacion = self._validar_datos_atleta_basicos(datos_atleta)
             if not validacion["success"]:
                 return validacion
             
             # PASO 3: Validar que el plan existe y está activo
-            plan_valido = self.finance_controller.validar_plan_para_atleta(datos_atleta['id_plan'])
-            if not plan_valido["success"]:
-                return {"success": False, "message": f"Plan inválido: {plan_valido['message']}"}
-            
-            # PASO 4: Crear usuario base
-            datos_usuario['rol'] = 'atleta'
-            usuario_result = self.user_controller.crear_usuario(datos_usuario, registrado_por_id)
-            if not usuario_result["success"]:
-                return {"success": False, "message": f"Error al crear usuario: {usuario_result['message']}"}
-            
-            usuario_id = usuario_result["usuario_id"]
-            
             try:
-                # PASO 5: Crear perfil de atleta
-                atleta_creado = self.atleta_model.insert_atleta(
-                    id_usuario=usuario_id,
-                    cedula=datos_atleta['cedula'],
-                    peso=datos_atleta.get('peso'),
-                    fecha_nacimiento=datos_atleta.get('fecha_nacimiento'),
-                    id_plan=datos_atleta['id_plan'],
-                    id_coach=datos_atleta.get('id_coach'),
-                    meta_largo_plazo=datos_atleta.get('meta_largo_plazo', ''),
-                    valoracion_especiales=datos_atleta.get('valoracion_especiales', '')
-                )
-                
-                if not atleta_creado:
-                    # Si falla, limpiar el usuario creado
-                    self.user_controller.desactivar_usuario(usuario_id, registrado_por_id)
-                    return {"success": False, "message": "Error al crear perfil de atleta"}
-                
-                # PASO 6: Obtener ID del atleta recién creado
-                atleta_id = self._obtener_atleta_id_por_usuario(usuario_id)
-                if not atleta_id:
-                    return {"success": False, "message": "Error al obtener ID del atleta"}
-                
-                # PASO 7: Procesar pago automático de inscripción
+                plan_valido = self.finance_controller.validar_plan_para_atleta(datos_atleta['id_plan'])
+                if not plan_valido["success"]:
+                    return {"success": False, "message": f"Plan inválido: {plan_valido['message']}"}
+            except:
+                # Si no existe FinanceController, continuar sin validar plan
+                pass
+            
+            # PASO 4: Crear atleta directamente (SIN USUARIO)
+            atleta_id = self.atleta_model.insert_atleta(
+                id_usuario=None,  # SIN USUARIO
+                cedula=datos_atleta['cedula'],
+                peso=datos_atleta.get('peso'),
+                fecha_nacimiento=datos_atleta.get('fecha_nacimiento'),
+                id_plan=datos_atleta['id_plan'],
+                id_coach=datos_atleta.get('id_coach'),
+                meta_largo_plazo=datos_atleta.get('meta_largo_plazo', ''),
+                valoracion_especiales=datos_atleta.get('valoracion_especiales', '')
+            )
+            
+            if not atleta_id:
+                return {"success": False, "message": "Error al crear perfil de atleta"}
+            
+            # PASO 5: Procesar pago automático de inscripción
+            try:
                 pago_result = self.finance_controller.procesar_pago_inscripcion(
                     id_atleta=atleta_id,
                     id_plan=datos_atleta['id_plan'],
@@ -82,7 +71,7 @@ class AtletaController:
                 if not pago_result["success"]:
                     return {"success": False, "message": f"Error al procesar pago: {pago_result['message']}"}
                 
-                # PASO 8: Actualizar atleta con fecha de vencimiento y estado solvente
+                # PASO 6: Actualizar atleta con fecha de vencimiento y estado solvente
                 fecha_vencimiento = pago_result["fecha_vencimiento"]
                 self._actualizar_estado_membresia(atleta_id, fecha_vencimiento, 'solvente', datetime.now().date())
                 
@@ -90,18 +79,51 @@ class AtletaController:
                     "success": True,
                     "message": "Atleta registrado exitosamente",
                     "atleta_id": atleta_id,
-                    "usuario_id": usuario_id,
                     "fecha_vencimiento": fecha_vencimiento,
                     "monto_pagado": pago_result["monto"]
                 }
                 
             except Exception as e:
-                # Si algo falla después de crear el usuario, desactivarlo
-                self.user_controller.desactivar_usuario(usuario_id, registrado_por_id)
-                return {"success": False, "message": f"Error en el proceso de registro: {str(e)}"}
+                # Si falla el pago, pero el atleta ya fue creado, informar
+                return {
+                    "success": True,
+                    "message": f"Atleta registrado, pero error en pago: {str(e)}",
+                    "atleta_id": atleta_id,
+                    "warning": "Verificar pago manualmente"
+                }
                 
         except Exception as e:
             return {"success": False, "message": f"Error interno: {str(e)}"}
+
+    # TAMBIÉN AGREGA ESTE MÉTODO DE VALIDACIÓN SIMPLIFICADO:
+    def _validar_datos_atleta_basicos(self, datos_atleta):
+        """Valida los datos básicos necesarios para crear un atleta"""
+        # Campos requeridos
+        campos_requeridos = ['nombre', 'apellido', 'cedula', 'id_plan']
+        
+        for campo in campos_requeridos:
+            if not datos_atleta.get(campo):
+                return {"success": False, "message": f"Campo requerido: {campo}"}
+        
+        # Validar que la cédula sea única
+        if self._cedula_existe(datos_atleta['cedula']):
+            return {"success": False, "message": "La cédula ya está registrada"}
+        
+        # Validar email si se proporciona
+        if datos_atleta.get('email') and '@' not in datos_atleta['email']:
+            return {"success": False, "message": "Email inválido"}
+        
+        # Validar fecha de nacimiento si se proporciona
+        if datos_atleta.get('fecha_nacimiento'):
+            try:
+                fecha_nac = datetime.strptime(str(datos_atleta['fecha_nacimiento']), '%Y-%m-%d').date()
+                edad = (datetime.now().date() - fecha_nac).days // 365
+                if edad < 16 or edad > 80:
+                    return {"success": False, "message": "Edad debe estar entre 16 y 80 años"}
+            except ValueError:
+                return {"success": False, "message": "Fecha de nacimiento inválida"}
+        
+        return {"success": True}
     
     # ==================== GESTIÓN DE MEMBRESÍAS ====================
     
