@@ -1,30 +1,27 @@
-# Modelo para gestión de usuarios
+# Modelo para gestión de asignaciones coach-atleta
 import mysql.connector
 from mysql.connector import Error
 from .database import Database
 
-
-class UsuarioModel:
+class AsignacionModel:
     def __init__(self):
         self.db = Database()
-    
-    # Aquí van los métodos para usuarios
-    
-    def insert_usuario(self, nombre, apellido, edad, direccion, telefono, email, contraseña, rol, creado_por):
+
+    def insert_asignacion(self, id_coach, id_atleta, fecha_asignacion, fecha_fin, estado_activo, notas):
         try:
             self.db.connect()
             cursor = self.db.connection.cursor()
             cursor.execute("""
-                INSERT INTO `usuarios` 
-                (`nombre`, `apellido`, `edad`, `direccion`, `telefono`, `email`, `contraseña`, `rol`, `creado_por`) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (nombre, apellido, edad, direccion, telefono, email, contraseña, rol, creado_por))
+                INSERT INTO `asignaciones_coach_atleta`
+                (`id_coach`, `id_atleta`, `fecha_asignacion`, `fecha_fin`, `estado_activo`, `notas`)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (id_coach, id_atleta, fecha_asignacion, fecha_fin, estado_activo, notas))
             self.db.connection.commit()
             print(cursor.rowcount)
-            return cursor.lastrowid  # Retorna el ID del usuario insertado
+            return cursor.lastrowid
 
         except mysql.connector.Error as error:
-            print(f"Error al insertar usuario: {error}")
+            print(f"Error al insertar asignación: {error}")
             return None
 
         finally:
@@ -32,15 +29,15 @@ class UsuarioModel:
                 cursor.close()
             self.db.disconnect()
 
-    def read_usuarios(self):
+    def read_asignaciones(self):
         try:
             self.db.connect()
             cursor = self.db.connection.cursor()
-            cursor.execute("SELECT * FROM `usuarios`")
+            cursor.execute("SELECT * FROM `asignaciones_coach_atleta`")
             return cursor.fetchall()
 
         except mysql.connector.Error as error:
-            print(f"Error al leer usuarios: {error}")
+            print(f"Error al leer asignaciones: {error}")
             return []
 
         finally:
@@ -48,22 +45,22 @@ class UsuarioModel:
                 cursor.close()
             self.db.disconnect()
 
-    def update_usuario(self, id, nombre, apellido, edad, direccion, telefono, email, contraseña, rol, estado_activo):
+    def update_asignacion(self, id_asignacion, id_coach, id_atleta, fecha_asignacion, fecha_fin, estado_activo, notas):
         try:
             self.db.connect()
             cursor = self.db.connection.cursor()
             cursor.execute("""
-                UPDATE `usuarios` SET 
-                    `nombre`=%s, `apellido`=%s, `edad`=%s, `direccion`=%s, `telefono`=%s, 
-                    `email`=%s, `contraseña`=%s, `rol`=%s, `estado_activo`=%s 
-                WHERE `id`=%s
-            """, (nombre, apellido, edad, direccion, telefono, email, contraseña, rol, estado_activo, id))
+                UPDATE `asignaciones_coach_atleta` SET 
+                    `id_coach`=%s, `id_atleta`=%s, `fecha_asignacion`=%s,
+                    `fecha_fin`=%s, `estado_activo`=%s, `notas`=%s
+                WHERE `id_asignacion`=%s
+            """, (id_coach, id_atleta, fecha_asignacion, fecha_fin, estado_activo, notas, id_asignacion))
             self.db.connection.commit()
             print(cursor.rowcount)
             return True
 
         except mysql.connector.Error as error:
-            print(f"Error al actualizar usuario: {error}")
+            print(f"Error al actualizar asignación: {error}")
             return False
 
         finally:
@@ -71,17 +68,17 @@ class UsuarioModel:
                 cursor.close()
             self.db.disconnect()
 
-    def delete_usuario(self, id):
+    def delete_asignacion(self, id_asignacion):
         try:
             self.db.connect()
             cursor = self.db.connection.cursor()
-            cursor.execute("DELETE FROM `usuarios` WHERE `id`=%s", (id,))
+            cursor.execute("DELETE FROM `asignaciones_coach_atleta` WHERE `id_asignacion`=%s", (id_asignacion,))
             self.db.connection.commit()
             print(cursor.rowcount)
             return True
 
         except mysql.connector.Error as error:
-            print(f"Error al eliminar usuario: {error}")
+            print(f"Error al eliminar asignación: {error}")
             return False
 
         finally:
