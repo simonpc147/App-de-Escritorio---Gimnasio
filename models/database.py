@@ -3,12 +3,11 @@ from mysql.connector import Error
 
 class Database:
     def __init__(self):
-        # Configuración de la base de datos
         self.config = {
             'host': 'localhost',
             'user': 'root',
-            'password': '',  # Cambiar por tu contraseña
-            'database': 'athenas',
+            'password': '', 
+            'database': 'ahenas',
             'port': 3306
         }
         self.connection = None
