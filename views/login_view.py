@@ -71,14 +71,6 @@ class LoginView:
         )
     
         
-        # Título del formulario
-        self.style.configure(
-            'LoginFormTitle.TLabel',
-            background=self.colores['blanco'],  # Fondo blanco
-            foreground=self.colores['gris_oscuro'],
-            font=('Arial', 20, 'bold')
-        )
-        
         # Labels de campos
         self.style.configure(
             'LoginLabel.TLabel',
@@ -90,8 +82,8 @@ class LoginView:
         # Entries del login con bordes redondeados simulados
         self.style.configure(
             'Login.TEntry',
-            font=('Arial', 12),
-            padding=(15, 12),  # Más padding para simular bordes redondeados
+            font=('Arial', 18),
+            padding=(18, 15),  # Más padding para simular bordes redondeados
             relief='solid',
             borderwidth=1,
             focuscolor=self.colores['verde_lima'],
@@ -186,94 +178,23 @@ class LoginView:
         logo_frame = ttk.Frame(parent, style='Login.TFrame')
         logo_frame.pack(pady=(0, 10))
         
-        try:
-            # Cargar la imagen real del logo
-            # Cambia 'assets/logo_athena.png' por la ruta real de tu imagen
-            logo_image = Image.open('assets/logo_athena.png')
-            
-            # Redimensionar manteniendo proporción
-            logo_image = logo_image.resize((280, 200), Image.Resampling.LANCZOS)
-            self.logo_photo = ImageTk.PhotoImage(logo_image)
-            
-            # Crear label con la imagen
-            logo_label = tk.Label(
-                logo_frame,
-                image=self.logo_photo,
-                bg=self.colores['fondo_principal'],
-                border=0
-            )
-            logo_label.pack()
-            
-        except (FileNotFoundError, Exception):
-            # Si no encuentra la imagen, usar logo simplificado
-            self.crear_logo_simplificado(logo_frame)
-    
-    def crear_logo_simplificado(self, parent):
-        """Logo simplificado si no se encuentra la imagen"""
-        logo_canvas = tk.Canvas(
-            parent,
-            width=120,
-            height=80,
+      
+        logo_image = Image.open('assets/logo_athena.png')
+        
+        # Redimensionar manteniendo proporción
+        logo_image = logo_image.resize((280, 200), Image.Resampling.LANCZOS)
+        self.logo_photo = ImageTk.PhotoImage(logo_image)
+        
+        # Crear label con la imagen
+        logo_label = tk.Label(
+            logo_frame,
+            image=self.logo_photo,
             bg=self.colores['fondo_principal'],
-            highlightthickness=0
+            border=0
         )
-        logo_canvas.pack()
-        
-        # Centro del canvas
-        cx, cy = 60, 40
-        
-        # Dibujar las "alas" decorativas (versión simplificada)
-        # Alas verdes superiores
-        logo_canvas.create_polygon(
-            [25, 25, 45, 20, 50, 30, 30, 35],
-            fill=self.colores['verde_lima'],
-            outline=''
-        )
-        logo_canvas.create_polygon(
-            [95, 25, 75, 20, 70, 30, 90, 35],
-            fill=self.colores['verde_lima'],
-            outline=''
-        )
-        
-        # Alas moradas inferiores
-        logo_canvas.create_polygon(
-            [25, 45, 45, 50, 50, 60, 30, 55],
-            fill=self.colores['morado'],
-            outline=''
-        )
-        logo_canvas.create_polygon(
-            [95, 45, 75, 50, 70, 60, 90, 55],
-            fill=self.colores['morado'],
-            outline=''
-        )
-        
-        # Círculo central (cabeza de lechuza simplificada)
-        logo_canvas.create_oval(
-            cx-15, cy-15, cx+15, cy+15,
-            fill=self.colores['gris_oscuro'],
-            outline=self.colores['verde_lima'],
-            width=2
-        )
-        
-        # "Ojos" de la lechuza
-        logo_canvas.create_oval(
-            cx-8, cy-5, cx-2, cy+1,
-            fill=self.colores['blanco'],
-            outline=''
-        )
-        logo_canvas.create_oval(
-            cx+2, cy-5, cx+8, cy+1,
-            fill=self.colores['blanco'],
-            outline=''
-        )
-        
-        # Detalle verde inferior
-        logo_canvas.create_polygon(
-            [cx-3, cy+8, cx, cy+15, cx+3, cy+8],
-            fill=self.colores['verde_lima'],
-            outline=''
-        )
-    
+        logo_label.pack()
+            
+
     def crear_formulario_login(self):
         """Crea el formulario de login"""
         # Tarjeta principal del formulario con borde elegante
@@ -711,43 +632,6 @@ class LoginView:
             "📞 Teléfono: (555) 123-4567\n"
             "🏋️ ATHENA GYM & BOX - Sistema de Gestión"
         )
-    
-    def mostrar_info_sistema(self):
-        """Muestra información del sistema"""
-        info = """
-🏋️ ATHENA GYM & BOX
-Sistema de Gestión Integral
-
-📋 Versión: 1.0.0
-🏗️ Desarrollado con: Python + Tkinter
-💾 Base de datos: MySQL
-🔐 Autenticación: Token-based
-
-👥 ROLES DISPONIBLES:
-• Administrador Principal
-• Secretaria/Recepción
-• Coach/Entrenador
-• Atleta/Miembro
-
-🔧 FUNCIONALIDADES PRINCIPALES:
-• Gestión completa de miembros
-• Control de pagos y suscripciones
-• Asignación de coaches y rutinas
-• Reportes financieros y estadísticas
-• Control de acceso al gimnasio
-• Gestión de clases y horarios
-
-💪 ESPECIALIDADES:
-• Entrenamiento funcional
-• CrossFit y BOX
-• Gimnasio tradicional
-• Clases grupales
-• Entrenamiento personalizado
-
-© 2024 ATHENA GYM & BOX
-Todos los derechos reservados
-        """
-        messagebox.showinfo("ATHENA GYM & BOX - Información del Sistema", info)
     
     # ==================== PERSISTENCIA DE CREDENCIALES ====================
     
