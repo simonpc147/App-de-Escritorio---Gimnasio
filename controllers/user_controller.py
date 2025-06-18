@@ -63,8 +63,8 @@ class UserController:
     def _validar_permisos_creacion(self, creador_id, rol_a_crear):
         """
         Valida permisos de creación según el flujo de la aplicación:
-        - admin_principal: puede crear secretarias
-        - secretaria: puede crear coaches
+        - admin_principal: puede crear CUALQUIER usuario
+        - secretaria: puede crear coaches y atletas
         """
         creador = self.obtener_usuario_por_id(creador_id)
         if not creador:
@@ -72,10 +72,12 @@ class UserController:
         
         creador_rol = creador[8]  # Posición del rol en la tupla
         
-        # Reglas de creación
-        if creador_rol == 'admin_principal' and rol_a_crear == 'secretaria':
+        # Reglas de creación CORREGIDAS
+        if creador_rol == 'admin_principal':
+            # Admin puede crear cualquier tipo de usuario
             return True
-        elif creador_rol == 'secretaria' and rol_a_crear == 'coach':
+        elif creador_rol == 'secretaria' and rol_a_crear in ['coach', 'atleta']:
+            # Secretaria puede crear coaches y atletas
             return True
         else:
             return False
@@ -140,7 +142,7 @@ class UserController:
         """Obtiene usuarios creados por un usuario específico"""
         try:
             usuarios = self.usuario_model.read_usuarios()
-            usuarios_creados = [u for u in usuarios if u[9] == creador_id]  # creado_por en posición 9
+            usuarios_creados = [u for u in usuarios if u[10] == creador_id]  # CORREGIDO: creado_por en posición 10
             return {"success": True, "usuarios": usuarios_creados}
         except Exception as e:
             return {"success": False, "message": f"Error al obtener usuarios creados: {str(e)}"}
@@ -199,10 +201,10 @@ class UserController:
         if quien_actualiza_id == usuario_a_actualizar_id:
             return True
         
-        # Secretarias pueden actualizar coaches que crearon
+        # Secretarias pueden actualizar coaches y atletas que crearon
         if actualizador[8] == 'secretaria':
             usuario_objetivo = self.obtener_usuario_por_id(usuario_a_actualizar_id)
-            if usuario_objetivo and usuario_objetivo[9] == quien_actualiza_id:  # creado_por
+            if usuario_objetivo and usuario_objetivo[10] == quien_actualiza_id:
                 return True
         
         return False
@@ -237,7 +239,7 @@ class UserController:
         try:
             usuarios = self.usuario_model.read_usuarios()
             for usuario in usuarios:
-                if usuario[6] == email and usuario[9]:  # email y estado_activo
+                if usuario[6] == email and usuario[9]:  # email y estado_activo (posición 9 CORRECTA)
                     if self._verify_password(password, usuario[7]):  # contraseña
                         return {
                             "success": True,
@@ -254,3 +256,12 @@ class UserController:
             
         except Exception as e:
             return {"success": False, "message": f"Error en validación: {str(e)}"}
+
+    def obtener_todos_usuarios_activos(self):
+        """Obtiene solo usuarios activos"""
+        try:
+            usuarios = self.usuario_model.read_usuarios()
+            usuarios_activos = [u for u in usuarios if u[9]]  # estado_activo en posición 9
+            return {"success": True, "usuarios": usuarios_activos}
+        except Exception as e:
+            return {"success": False, "message": f"Error al obtener usuarios activos: {str(e)}"}
