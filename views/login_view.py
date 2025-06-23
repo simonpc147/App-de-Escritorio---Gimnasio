@@ -83,7 +83,7 @@ class LoginView:
         self.style.configure(
             'Login.TEntry',
             font=('Arial', 18),
-            padding=(18, 15),  # Más padding para simular bordes redondeados
+            padding=(18, 15),  
             relief='solid',
             borderwidth=1,
             focuscolor=self.colores['verde_lima'],
