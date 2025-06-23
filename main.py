@@ -292,8 +292,7 @@ class GimnasioApp:
                 ("💰 Gestión de Pagos", self.abrir_gestion_pagos),
                 ("💸 Gestión de Egresos", self.abrir_gestion_egresos),
                 ("📊 Reportes Financieros", self.abrir_reportes),
-                ("⚙️ Configuración", self.abrir_configuracion),
-                ("🔐 Gestión de Sesiones", self.abrir_sesiones)
+                # ("⚙️ Configuración", self.abrir_configuracion),
             ]
         elif rol == 'secretaria':
             return [
@@ -1038,9 +1037,7 @@ class GimnasioApp:
         v_scrollbar.pack(side='right', fill='y')
         h_scrollbar.pack(side='bottom', fill='x')
         
-        # Eventos
         self.atletas_tree.bind('<<TreeviewSelect>>', self.on_atleta_selected)
-        self.atletas_tree.bind('<Double-1>', self.ver_detalles_atleta)
 
     def cargar_atletas(self):
         """Carga los atletas desde la base de datos"""
@@ -1359,19 +1356,16 @@ class GimnasioApp:
         
         # ******** CORRECCIÓN DE ORDEN ********
         
-        # 1. Crear PRIMERO todas las secciones del formulario
         self.crear_seccion_datos_personales_atleta(main_frame)
         self.crear_seccion_datos_fisicos_atleta(main_frame)
         
         if modo == 'registrar':
             self.crear_seccion_plan_pago_atleta(main_frame)
-        
-        # 2. DESPUÉS, si es modo edición, cargar los datos en los campos que ya existen
+
+        self.crear_botones_atleta_form(main_frame, modo)
+
         if modo == 'editar' and atleta:
             self.cargar_datos_atleta_form(atleta)
-        
-        # 3. Finalmente, crear los botones
-        self.crear_botones_atleta_form(main_frame, modo)
         
         # Empaquetar y configurar scroll
         main_canvas.pack(side="left", fill="both", expand=True)
@@ -1734,6 +1728,8 @@ class GimnasioApp:
         """Abre la gestión de coaches"""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+
+            
         
     def abrir_gestion_pagos(self):
          """Abre la gestión de pagos"""
@@ -1783,7 +1779,7 @@ class GimnasioApp:
         filter_frame = ttk.Frame(parent)
         filter_frame.pack(fill='x')
 
-        # Búsqueda por texto (LA PARTE QUE FALTABA)
+        # Búsqueda por texto
         ttk.Label(filter_frame, text="🔍 Buscar (Atleta/Desc):").pack(side='left', padx=(0, 5))
         self.search_pagos_var = tk.StringVar()
         search_entry = ttk.Entry(filter_frame, textvariable=self.search_pagos_var, width=20)
@@ -1821,39 +1817,6 @@ class GimnasioApp:
 
         self.delete_pago_btn = ttk.Button(filter_frame, text="🗑️ Eliminar Pago", command=self._eliminar_pago_action, state='disabled')
         self.delete_pago_btn.pack(side='left', padx=5)
-        
-
-        # Búsqueda por texto
-        ttk.Label(filter_frame, text="🔍 Buscar (Atleta/Desc):").pack(side='left', padx=(0, 5))
-        self.search_pagos_var = tk.StringVar()
-        search_entry = ttk.Entry(filter_frame, textvariable=self.search_pagos_var, width=20)
-        search_entry.pack(side='left', padx=(0, 15))
-        self.search_pagos_var.trace('w', self.filtrar_pagos)
-
-        # Filtro por tipo de pago
-        ttk.Label(filter_frame, text="Tipo Pago:").pack(side='left', padx=(0, 5))
-        self.tipo_pago_filter_var = tk.StringVar(value="Todos")
-        tipo_pago_combo = ttk.Combobox(
-            filter_frame, 
-            textvariable=self.tipo_pago_filter_var,
-            values=["Todos", "Inscripcion", "Renovacion", "Servicio Extra"],
-            state="readonly", width=15
-        )
-        tipo_pago_combo.pack(side='left', padx=(0, 15))
-        tipo_pago_combo.bind('<<ComboboxSelected>>', self.filtrar_pagos)
-        
-        # Filtros de fecha
-        ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(10, 5))
-        self.fecha_desde_pagos = DateEntry(filter_frame, width=10, date_pattern='yyyy-mm-dd')
-        self.fecha_desde_pagos.set_date(datetime.now() - timedelta(days=30))
-        self.fecha_desde_pagos.pack(side='left', padx=(0, 10))
-        
-        ttk.Label(filter_frame, text="Hasta:").pack(side='left', padx=(0, 5))
-        self.fecha_hasta_pagos = DateEntry(filter_frame, width=10, date_pattern='yyyy-mm-dd')
-        self.fecha_hasta_pagos.set_date(datetime.now())
-        self.fecha_hasta_pagos.pack(side='left', padx=(0, 10))
-        
-        ttk.Button(filter_frame, text="🔍 Aplicar Fechas", command=self.filtrar_pagos).pack(side='left')
 
     def crear_tabla_pagos(self):
         """Crea la tabla (Treeview) para mostrar los pagos"""
@@ -2148,7 +2111,6 @@ class GimnasioApp:
             return
 
         try:
-            # Llamar al controlador para obtener los datos
             resultado = self.finance_controller.generar_reporte_financiero(fecha_inicio, fecha_fin)
 
             if not resultado['success']:
@@ -2160,15 +2122,11 @@ class GimnasioApp:
             desglose_ingresos = reporte['desglose_ingresos']
             desglose_egresos = reporte['desglose_egresos']
 
-            # Actualizar Panel de Resumen
             self.resumen_ingresos_var.set(f"Total Ingresos: ${resumen['total_ingresos']:.2f}")
             self.resumen_egresos_var.set(f"Total Egresos: ${resumen['total_egresos']:.2f}")
             balance_color = self.colores['success'] if resumen['balance'] >= 0 else self.colores['error']
             self.resumen_balance_var.set(f"Balance: ${resumen['balance']:.2f}")
-            # Cambiar color del balance (asumiendo que el label es accesible)
-            # self.resumen_balance_label.config(foreground=balance_color)
 
-            # Actualizar Tabla de Ingresos
             self.reporte_ingresos_tree.delete(*self.reporte_ingresos_tree.get_children())
             for tipo, monto in desglose_ingresos.items():
                 tipo_legible = tipo.replace('_', ' ').title()
@@ -2186,19 +2144,13 @@ class GimnasioApp:
             traceback.print_exc()
         
     
-    def abrir_configuracion(self):
-        """Abre la configuración"""
-        if not self.verificar_permisos(['admin_principal']):
-            return
-        self.mostrar_modulo_pendiente("⚙️ CONFIGURACIÓN", 
-                                     "Módulo para configurar parámetros del sistema.")
+    # def abrir_configuracion(self):
+    #     """Abre la configuración"""
+    #     if not self.verificar_permisos(['admin_principal']):
+    #         return
+    #     self.mostrar_modulo_pendiente("⚙️ CONFIGURACIÓN", 
+    #                                  "Módulo para configurar parámetros del sistema.")
     
-    def abrir_sesiones(self):
-        """Abre gestión de sesiones"""
-        if not self.verificar_permisos(['admin_principal']):
-            return
-        self.mostrar_modulo_pendiente("🔐 GESTIÓN DE SESIONES", 
-                                     "Módulo para administrar sesiones activas del sistema.")
     
     # Métodos específicos para otros roles
     def abrir_mis_atletas(self):

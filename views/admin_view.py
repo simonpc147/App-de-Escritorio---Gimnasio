@@ -695,7 +695,7 @@ class AdminView:
 def crear_tab_gestion_atletas(self):
     """Crea la pestaña de gestión de atletas con listado y doble clic"""
     self.tab_gestion_atletas = ttk.Frame(self.tabs)
-    self.tabs.add(self.tab_gestion_atletas, text="👟 Gestión de Atletas")
+    self.notebook.add(self.tab_gestion_atletas, text="👟 Gestión de Atletas")
 
     frame = ttk.Frame(self.tab_gestion_atletas, padding=15)
     frame.pack(fill='both', expand=True)
