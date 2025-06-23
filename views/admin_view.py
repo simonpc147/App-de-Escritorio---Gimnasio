@@ -36,7 +36,7 @@ class AdminView:
         self.crear_interfaz()
         
         # Cargar datos iniciales
-        self.cargar_datos_iniciales()
+        self.actualizar_datos()
     
     def configurar_estilos(self):
         """Configura estilos específicos para la vista de administrador"""
@@ -676,8 +676,6 @@ class AdminView:
         # Menú contextual administrativo
         self.crear_menu_contextual_usuarios()
         
-        # Bind eventos
-        self.usuarios_tree.bind('<Double-1>', self.editar_usuario_admin)
     
     def crear_menu_contextual_usuarios(self):
         """Crea menú contextual para gestión de usuarios"""
@@ -693,7 +691,75 @@ class AdminView:
         
         # Bind del menú
         self.usuarios_tree.bind('<Button-3>', self.mostrar_menu_usuarios)
-    
+
+def crear_tab_gestion_atletas(self):
+    """Crea la pestaña de gestión de atletas con listado y doble clic"""
+    self.tab_gestion_atletas = ttk.Frame(self.tabs)
+    self.tabs.add(self.tab_gestion_atletas, text="👟 Gestión de Atletas")
+
+    frame = ttk.Frame(self.tab_gestion_atletas, padding=15)
+    frame.pack(fill='both', expand=True)
+
+    columns = ("ID", "Nombre", "Apellido", "Cédula", "Edad", "Peso", "Plan", "Estado")
+    self.atletas_tree = ttk.Treeview(frame, columns=columns, show='headings', style='Admin.Treeview')
+    self.atletas_tree.bind('<Double-1>', self.ver_detalles_atleta)
+
+    for col in columns:
+        self.atletas_tree.heading(col, text=col)
+        self.atletas_tree.column(col, width=100)
+
+    vsb = ttk.Scrollbar(frame, orient='vertical', command=self.atletas_tree.yview)
+    hsb = ttk.Scrollbar(frame, orient='horizontal', command=self.atletas_tree.xview)
+    self.atletas_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+    self.atletas_tree.grid(row=0, column=0, sticky='nsew')
+    vsb.grid(row=0, column=1, sticky='ns')
+    hsb.grid(row=1, column=0, sticky='ew')
+
+    frame.rowconfigure(0, weight=1)
+    frame.columnconfigure(0, weight=1)
+
+    self.cargar_atletas_en_tabla()
+
+def ver_detalles_atleta(self, event=None):
+    """Muestra todos los datos detallados del atleta seleccionado en un cuadro de mensaje"""
+    selection = self.atletas_tree.selection()
+    if not selection:
+        messagebox.showwarning("Atención", "Selecciona un atleta para ver detalles.")
+        return
+
+    item = self.atletas_tree.item(selection[0])
+    atleta_id = item['values'][0]  # Suponiendo que el primer valor es el ID del atleta
+
+    resultado = self.atleta_controller.obtener_detalles_completos_atleta(atleta_id)
+    if not resultado['success']:
+        messagebox.showerror("Error", resultado['message'])
+        return
+
+    a = resultado['atleta']
+
+    mensaje = f"""
+👤 {a['nombre']} {a['apellido']}
+🪪 Cédula: {a['cedula']}
+🎂 Edad: {a['edad'] or 'N/A'} | Nacimiento: {a['fecha_nacimiento'].strftime('%Y-%m-%d') if a['fecha_nacimiento'] else 'N/A'}
+⚖️ Peso: {a['peso']} kg
+🏠 Dirección: {a['direccion'] or 'No especificada'}
+
+🎯 Meta: {a['meta_largo_plazo'] or 'No registrada'}
+🩺 Condiciones Médicas: {a['valoracion_especiales'] or 'No registradas'}
+
+📅 Fecha de Inscripción: {a['fecha_inscripcion'].strftime('%Y-%m-%d') if a['fecha_inscripcion'] else 'N/A'}
+💎 Plan: {a['nombre_plan'] or 'No asignado'}
+💵 Último Pago: {a['ultimo_pago'].strftime('%Y-%m-%d') if a['ultimo_pago'] else 'No registrado'}
+⏳ Vence: {a['fecha_vencimiento'].strftime('%Y-%m-%d') if a['fecha_vencimiento'] else 'No definido'}
+"""
+    messagebox.showinfo("📋 Detalles del Atleta", mensaje.strip())
+
+
+    self.atletas_tree.bind('<Double-1>', self.ver_detalles_atleta)
+
+
+
     def crear_tab_finanzas_avanzadas(self):
         """Crea la pestaña de finanzas avanzadas"""
         finanzas_frame = ttk.Frame(self.notebook)
@@ -1167,12 +1233,55 @@ class AdminView:
             # Cargar alertas críticas
             self.parent_frame.after(200, self.cargar_alertas_admin)
             
+            # Cargar transacciones recientes en el dashboard financiero
+            self.parent_frame.after(300, self.cargar_transacciones_recientes)
+            
             # Status final
             self.parent_frame.after(500, lambda: self.actualizar_status("✅ Panel ejecutivo listo"))
             
         except Exception as e:
             self.parent_frame.after(0, lambda: self.actualizar_status(f"❌ Error: {str(e)}"))
-    
+
+# ... (código existente hasta el final de la clase) ...
+
+    def cargar_datos_financieros(self):
+        """Carga datos financieros avanzados"""
+        self.actualizar_status("🔄 Cargando datos financieros...")
+        self.cargar_transacciones_recientes()
+        # Aquí se podrían cargar más datos para los otros widgets financieros
+        self.actualizar_status("✅ Datos financieros actualizados.")
+
+    def cargar_transacciones_recientes(self):
+        """Carga las transacciones más recientes en la vista general financiera."""
+        try:
+            # Limpiar transacciones existentes
+            for item in self.transactions_tree.get_children():
+                self.transactions_tree.delete(item)
+            
+            resultado = self.finance_controller.obtener_ingresos_detallados()
+
+            if resultado['success']:
+                # Mostrar solo las últimas 15-20 transacciones para un resumen
+                transacciones_recientes = resultado['ingresos'][:20] 
+
+                for transaccion in transacciones_recientes:
+                    tipo_transaccion = f"Ingreso ({transaccion['tipo_pago']})"
+                    monto = f"+ ${transaccion['monto']:.2f}"
+                    estado = "Completado"
+                    
+                    values = (
+                        transaccion['fecha_pago'],
+                        tipo_transaccion,
+                        transaccion['descripcion'],
+                        monto,
+                        estado
+                    )
+                    self.transactions_tree.insert('', 'end', values=values)
+            else:
+                messagebox.showerror("Error Financiero", f"No se pudieron cargar las transacciones: {resultado['message']}")
+
+        except Exception as e:
+            print(f"Error cargando transacciones recientes: {e}")
     def cargar_mini_metricas(self):
         """Carga métricas del mini dashboard"""
         try:
@@ -1403,44 +1512,41 @@ class AdminView:
             
             self.actualizar_status(f"🔍 {len(usuarios_encontrados)} usuarios encontrados")
     
-    def ver_perfil_completo(self):
-        """Ver perfil completo del usuario seleccionado"""
-        selection = self.usuarios_tree.selection()
-        if not selection:
-            messagebox.showwarning("Advertencia", "Por favor selecciona un usuario")
-            return
-        
-        item = self.usuarios_tree.item(selection[0])
-        usuario_id = item['values'][0]
-        
-        # Obtener datos completos del usuario
-        usuario = self.user_controller.obtener_usuario_por_id(usuario_id)
-        if usuario:
-            info = f"""
-👤 PERFIL COMPLETO DE USUARIO
-════════════════════════════
+def ver_detalles_atleta(self, event=None):
+    """Muestra todos los datos del atleta seleccionado en un cuadro de diálogo"""
+    selection = self.atletas_tree.selection()
+    if not selection:
+        messagebox.showwarning("Atención", "Selecciona un atleta")
+        return
 
-🆔 ID: {usuario[0]}
-👤 Nombre: {usuario[1]} {usuario[2]}
-📧 Email: {usuario[6]}
-🏷️ Rol: {usuario[8]}
-📅 Edad: {usuario[3] or 'No especificada'}
-🏠 Dirección: {usuario[4] or 'No especificada'}
-📞 Teléfono: {usuario[5] or 'No especificado'}
-📅 Fecha de creación: {usuario[10]}
-👤 Creado por: {usuario[11] or 'Sistema'}
-✅ Estado: {'Activo' if usuario[9] else 'Inactivo'}
-            """
-            messagebox.showinfo("Perfil Completo", info)
-    
-    def editar_usuario_admin(self, event=None):
-        """Editar usuario seleccionado"""
-        selection = self.usuarios_tree.selection()
-        if not selection:
-            messagebox.showwarning("Advertencia", "Por favor selecciona un usuario")
-            return
-        
-        messagebox.showinfo("Información", "🚧 Edición de usuarios - En desarrollo")
+    item = self.atletas_tree.item(selection[0])
+    atleta_id = item['values'][0]
+
+    resultado = self.atleta_controller.obtener_detalles_completos_atleta(atleta_id)
+    if not resultado['success']:
+        messagebox.showerror("Error", resultado['message'])
+        return
+
+    a = resultado['atleta']
+
+    mensaje = f"""
+👤 {a['nombre']} {a['apellido']}
+🪪 Cédula: {a['cedula']}
+🎂 Edad: {a['edad']}  |  Nacimiento: {a['fecha_nacimiento'].strftime('%Y-%m-%d') if a['fecha_nacimiento'] else 'N/A'}
+⚖️ Peso: {a['peso']} kg
+🏠 Dirección: {a['direccion'] or 'No especificada'}
+
+🎯 Meta: {a['meta_largo_plazo'] or 'No registrada'}
+🩺 Condiciones Médicas: {a['valoracion_especiales'] or 'No registradas'}
+
+📅 Fecha de Inscripción: {a['fecha_inscripcion'].strftime('%Y-%m-%d')}
+💎 Plan: {a['nombre_plan'] or 'No asignado'}
+💵 Último Pago: {a['ultimo_pago'].strftime('%Y-%m-%d') if a['ultimo_pago'] else 'No registrado'}
+⏳ Vence: {a['fecha_vencimiento'].strftime('%Y-%m-%d') if a['fecha_vencimiento'] else 'No definido'}
+"""
+
+    messagebox.showinfo("📋 Datos completos del atleta", mensaje)
+
     
     def cambiar_password_admin(self):
         """Cambiar contraseña de usuario seleccionado"""
@@ -1473,21 +1579,21 @@ class AdminView:
                 messagebox.showerror("Error", resultado['message'])
     
     def eliminar_usuario_admin(self):
-        """Eliminar usuario permanentemente"""
+        """Eliminar usuario seleccionado"""
         selection = self.usuarios_tree.selection()
         if not selection:
             messagebox.showwarning("Advertencia", "Por favor selecciona un usuario")
             return
-        
-        item = self.usuarios_tree.item(selection[0])
+        item = self.usuarios_tree-item(selection[0])
+        usuario_id = item['values'][0]
         usuario_nombre = item['values'][1]
-        
-        # Doble confirmación para eliminación
-        if messagebox.askyesno("⚠️ PELIGRO", 
-                              f"¿Estás COMPLETAMENTE SEGURA de eliminar permanentemente al usuario {usuario_nombre}?\n\n"
-                              "Esta acción NO se puede deshacer."):
-            if messagebox.askyesno("Última Confirmación", "¿Confirmas la eliminación PERMANENTE?"):
-                messagebox.showinfo("Información", "🚧 Eliminación permanente - En desarrollo")
+        if messagebox.askyesno("Confirmar", f"¿Estás segura de eliminar al usuario {usuario_nombre}?"):
+            resultado = self.user_controller.eliminar_usuario(usuario_id, self.usuario_actual['id'])
+            if resultado['success']:
+                messagebox.showinfo("Éxito", resultado['message'])
+                self.cargar_usuarios()
+
+    
     
     def cerrar_sesiones_usuario(self):
         """Cerrar todas las sesiones del usuario seleccionado"""
@@ -1906,15 +2012,7 @@ class AdminView:
                            f"Dirección: {direccion}\n"
                            f"Teléfono: {telefono}")
     
-    def cerrar_todas_sesiones(self):
-        """Cierra todas las sesiones activas"""
-        if messagebox.askyesno("Confirmar", "¿Estás segura de cerrar TODAS las sesiones activas?\n\n"
-                              "Esto desconectará a todos los usuarios."):
-            messagebox.showinfo("Información", "🔄 Cerrando todas las sesiones - En desarrollo")
     
-    def ver_log_seguridad(self):
-        """Ver log de seguridad"""
-        messagebox.showinfo("Información", "🔍 Log de seguridad - En desarrollo")
     
     def crear_backup(self):
         """Crear backup del sistema"""

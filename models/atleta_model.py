@@ -13,15 +13,19 @@ class AtletaModel:
             cursor = self.db.connection.cursor()
             cursor.execute("INSERT INTO `atletas`(`id_usuario`, `cedula`, `peso`, `fecha_nacimiento`, `id_plan`, `id_coach`, `meta_largo_plazo`, `valoracion_especiales`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", (id_usuario, cedula, peso, fecha_nacimiento, id_plan, id_coach, meta_largo_plazo, valoracion_especiales))
             self.db.connection.commit()
-            print(cursor.rowcount)
-            return True
+            
+            # SOLUCIÓN: Devolver el ID del nuevo registro en lugar de True
+            new_id = cursor.lastrowid
+            print(f"Nuevo atleta insertado con ID: {new_id}")
+            return new_id
 
         except mysql.connector.Error as error:
             print(f"Error al ingresar datos {error}")
-            return False
+            # Devolver None en caso de error para una mejor validación en el controlador
+            return None
 
         finally:
-            if cursor:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
             self.db.disconnect()
     
@@ -38,7 +42,7 @@ class AtletaModel:
             return []
 
         finally:
-            if cursor:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
             self.db.disconnect()
 
@@ -56,7 +60,7 @@ class AtletaModel:
             return False
 
         finally:
-            if cursor:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
             self.db.disconnect()
 
@@ -66,15 +70,14 @@ class AtletaModel:
             cursor = self.db.connection.cursor()
             cursor.execute("DELETE FROM `atletas` WHERE `id_atleta`=%s", (id_atleta,))
             self.db.connection.commit()
-            print(cursor.rowcount)
-            return True
+            # Verificar si la eliminación fue exitosa
+            return cursor.rowcount > 0
 
         except mysql.connector.Error as error:
             print(f"Error al eliminar datos {error}")
             return False
             
         finally:
-            if cursor:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
             self.db.disconnect()
-    

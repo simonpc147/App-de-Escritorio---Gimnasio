@@ -1,6 +1,8 @@
 # Controlador para gestión de usuarios
 import hashlib
 from models.usuario_model import UsuarioModel
+import secrets
+import string
 
 
 class UserController:
@@ -14,6 +16,14 @@ class UserController:
     def _verify_password(self, password, hashed_password):
         """Verifica si la contraseña coincide con el hash"""
         return self._hash_password(password) == hashed_password
+    def generar_password_seguro(self, longitud=12):
+        """
+        Genera una contraseña segura con letras mayúsculas, minúsculas y números.
+        """
+        alfabeto = string.ascii_letters + string.digits
+        while True:
+            password = ''.join(secrets.choice(alfabeto) for _ in range(longitud))
+            return password
     
     def crear_usuario(self, datos_usuario, creado_por_id):
         """
@@ -73,11 +83,14 @@ class UserController:
         creador_rol = creador[8]  # Posición del rol en la tupla
         
         # Reglas de creación CORREGIDAS
+        
         if creador_rol == 'admin_principal':
             # Admin puede crear cualquier tipo de usuario
             return True
         elif creador_rol == 'secretaria' and rol_a_crear in ['coach', 'atleta']:
             # Secretaria puede crear coaches y atletas
+            return True
+        elif creador_rol== 'Admin Principal' and rol_a_crear in ['coach', 'atleta']:
             return True
         else:
             return False
@@ -234,6 +247,16 @@ class UserController:
         except Exception as e:
             return {"success": False, "message": f"Error interno: {str(e)}"}
     
+    
+    #ELIMINAR USUARIOS
+    def eliminar_usuario(self, user_id):
+        cursor = self.usuario_model.db.connection.cursor()
+        query = "DELETE FROM usuarios WHERE id = %s"
+        cursor.execute(query, (user_id,))
+        self.usuario_model.db.connection.commit()
+        cursor.close()
+    
+
     def validar_credenciales(self, email, password):
         """Valida las credenciales de login"""
         try:

@@ -465,7 +465,8 @@ class AuthController:
                 
                 # Comparación exacta
                 email_match = str(usuario[6]).strip().lower() == email.strip().lower()
-                password_match = str(usuario[7]).strip() == password.strip()
+                password_match = self.user_controller._verify_password(password.strip(), usuario[7])
+
                 
                 print(f"  Email match: {email_match}")
                 print(f"  Password match: {password_match}")

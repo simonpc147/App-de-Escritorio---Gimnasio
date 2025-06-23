@@ -126,7 +126,6 @@ class FinanceController:
             monto = float(plan[3])
             fecha_pago = datetime.now().date()
             
-            # Si ya venció, renovar desde hoy; si no, desde la fecha de vencimiento actual
             if fecha_vencimiento_actual < fecha_pago:
                 fecha_base = fecha_pago
             else:
@@ -181,7 +180,7 @@ class FinanceController:
             
             ingreso_id = self.ingreso_model.insert_ingreso(
                 id_atleta=id_atleta,
-                id_plan=None,  # No está asociado a un plan
+                id_plan=None,
                 monto=monto_float,
                 tipo_pago='servicio_extra',
                 metodo_pago=metodo_pago,
@@ -204,12 +203,60 @@ class FinanceController:
                 
         except Exception as e:
             return {"success": False, "message": f"Error interno: {str(e)}"}
+
+    def eliminar_ingreso(self, id_pago, operado_por_id):
+        """Elimina un registro de ingreso de la base de datos."""
+        try:
+            if not self._tiene_permisos_financieros(operado_por_id):
+                return {"success": False, "message": "No tienes permisos para eliminar pagos"}
+
+            if self.ingreso_model.delete_ingreso(id_pago):
+                return {"success": True, "message": "Pago eliminado exitosamente."}
+            else:
+                return {"success": False, "message": "No se pudo eliminar el pago. Es posible que ya no exista."}
+
+        except Exception as e:
+            return {"success": False, "message": f"Error interno al eliminar pago: {str(e)}"}
+
+    def actualizar_ingreso(self, id_pago, datos_a_actualizar, operado_por_id):
+        """Actualiza un registro de ingreso existente."""
+        try:
+            if not self._tiene_permisos_financieros(operado_por_id):
+                return {"success": False, "message": "No tienes permisos para actualizar pagos"}
+
+            ingresos = self.ingreso_model.read_ingresos()
+            ingreso_actual = next((i for i in ingresos if i[0] == id_pago), None)
+
+            if not ingreso_actual:
+                return {"success": False, "message": "El pago a actualizar no fue encontrado."}
+
+            resultado = self.ingreso_model.update_ingreso(
+                id_pago=id_pago,
+                id_atleta=ingreso_actual[1],
+                id_plan=ingreso_actual[2],
+                monto=datos_a_actualizar.get('monto', ingreso_actual[3]),
+                tipo_pago=datos_a_actualizar.get('tipo_pago', ingreso_actual[4]),
+                metodo_pago=datos_a_actualizar.get('metodo_pago', ingreso_actual[5]),
+                descripcion=datos_a_actualizar.get('descripcion', ingreso_actual[6]),
+                fecha_pago=ingreso_actual[7],
+                fecha_vencimiento_anterior=ingreso_actual[8],
+                fecha_vencimiento_nueva=ingreso_actual[9],
+                procesado_por=ingreso_actual[10]
+            )
+
+            if resultado:
+                return {"success": True, "message": "Pago actualizado exitosamente."}
+            else:
+                return {"success": False, "message": "Error al actualizar el pago en la base de datos."}
+
+        except Exception as e:
+            return {"success": False, "message": f"Error interno al actualizar el pago: {str(e)}"}
     
     def obtener_ingresos_por_atleta(self, id_atleta):
         """Obtiene todos los ingresos de un atleta específico"""
         try:
             ingresos = self.ingreso_model.read_ingresos()
-            ingresos_atleta = [i for i in ingresos if i[1] == id_atleta]  # id_atleta en posición 1
+            ingresos_atleta = [i for i in ingresos if i[1] == id_atleta]
             return {"success": True, "ingresos": ingresos_atleta}
         except Exception as e:
             return {"success": False, "message": f"Error al obtener ingresos: {str(e)}"}
@@ -217,17 +264,63 @@ class FinanceController:
     def obtener_ingresos_por_fecha(self, fecha_inicio, fecha_fin):
         """Obtiene ingresos en un rango de fechas"""
         try:
-            ingresos = self.ingreso_model.read_ingresos()
+            resultado_detallado = self.obtener_ingresos_detallados()
+            if not resultado_detallado["success"]:
+                return resultado_detallado
+
+            ingresos_detallados = resultado_detallado["ingresos"]
             ingresos_filtrados = []
             
-            for ingreso in ingresos:
-                fecha_pago = ingreso[7]  # fecha_pago en posición 7
+            for ingreso in ingresos_detallados:
+                fecha_pago = ingreso['fecha_pago']
                 if fecha_inicio <= fecha_pago <= fecha_fin:
                     ingresos_filtrados.append(ingreso)
             
             return {"success": True, "ingresos": ingresos_filtrados}
         except Exception as e:
             return {"success": False, "message": f"Error al filtrar ingresos: {str(e)}"}
+
+    def obtener_ingresos_detallados(self):
+        """
+        Obtiene todos los ingresos y enriquece los datos con nombres
+        de atleta, plan y procesador para mostrarlos en la vista.
+        """
+        try:
+            ingresos_raw = self.ingreso_model.read_ingresos()
+            usuarios = self.usuario_model.read_usuarios()
+            planes = self.plan_model.read_planes()
+
+            mapa_usuarios = {u[0]: f"{u[1]} {u[2]}" for u in usuarios}
+            mapa_planes = {p[0]: p[1] for p in planes}
+            
+            ingresos_detallados = []
+            for ingreso in ingresos_raw:
+                id_pago, id_atleta, id_plan, monto, tipo_pago, metodo_pago, descripcion, fecha_pago, _, _, procesado_por = ingreso
+
+                nombre_atleta = mapa_usuarios.get(id_atleta, f"Atleta ID: {id_atleta}")
+                nombre_plan = mapa_planes.get(id_plan, "N/A")
+                nombre_procesador = mapa_usuarios.get(procesado_por, f"Usuario ID: {procesado_por}")
+
+                ingresos_detallados.append({
+                    "id_pago": id_pago,
+                    "fecha_pago": fecha_pago,
+                    "nombre_atleta": nombre_atleta,
+                    "nombre_plan": nombre_plan,
+                    "monto": float(monto),
+                    "tipo_pago": tipo_pago.replace('_', ' ').title(),
+                    "metodo_pago": metodo_pago.title(),
+                    "descripcion": descripcion,
+                    "nombre_procesador": nombre_procesador
+                })
+            
+            ingresos_detallados.sort(key=lambda x: x['fecha_pago'], reverse=True)
+
+            return {"success": True, "ingresos": ingresos_detallados}
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Error al obtener ingresos detallados: {str(e)}"}
     
     # ==================== GESTIÓN DE EGRESOS ====================
     
@@ -264,12 +357,21 @@ class FinanceController:
                 
         except Exception as e:
             return {"success": False, "message": f"Error interno: {str(e)}"}
+
+    # --- MÉTODO NUEVO Y CORREGIDO ---
+    def obtener_todos_los_egresos(self):
+        """Obtiene todos los registros de egresos de la base de datos."""
+        try:
+            egresos = self.egreso_model.read_egresos()
+            return {"success": True, "egresos": egresos}
+        except Exception as e:
+            return {"success": False, "message": f"Error al obtener egresos: {str(e)}"}
     
     def obtener_egresos_por_tipo(self, tipo_egreso):
         """Obtiene egresos filtrados por tipo"""
         try:
             egresos = self.egreso_model.read_egresos()
-            egresos_filtrados = [e for e in egresos if e[2] == tipo_egreso]  # tipo_egreso en posición 2
+            egresos_filtrados = [e for e in egresos if e[2] == tipo_egreso]
             return {"success": True, "egresos": egresos_filtrados}
         except Exception as e:
             return {"success": False, "message": f"Error al filtrar egresos: {str(e)}"}
@@ -281,7 +383,7 @@ class FinanceController:
             egresos_filtrados = []
             
             for egreso in egresos:
-                fecha_egreso = egreso[6]  # fecha_egreso en posición 6
+                fecha_egreso = egreso[6]
                 if fecha_inicio <= fecha_egreso <= fecha_fin:
                     egresos_filtrados.append(egreso)
             
@@ -294,32 +396,28 @@ class FinanceController:
     def generar_reporte_financiero(self, fecha_inicio, fecha_fin):
         """Genera un reporte financiero completo"""
         try:
-            # Obtener ingresos del período
-            ingresos_result = self.obtener_ingresos_por_fecha(fecha_inicio, fecha_fin)
+            ingresos_raw = self.ingreso_model.read_ingresos()
+            ingresos_periodo = [i for i in ingresos_raw if fecha_inicio <= i[7] <= fecha_fin]
+            
             egresos_result = self.obtener_egresos_por_fecha(fecha_inicio, fecha_fin)
+            if not egresos_result["success"]:
+                return {"success": False, "message": "Error al obtener datos de egresos"}
             
-            if not ingresos_result["success"] or not egresos_result["success"]:
-                return {"success": False, "message": "Error al obtener datos financieros"}
-            
-            ingresos = ingresos_result["ingresos"]
             egresos = egresos_result["egresos"]
             
-            # Calcular totales
-            total_ingresos = sum([float(i[3]) for i in ingresos])  # monto en posición 3
-            total_egresos = sum([float(e[1]) for e in egresos])    # monto en posición 1
+            total_ingresos = sum([float(i[3]) for i in ingresos_periodo])
+            total_egresos = sum([float(e[1]) for e in egresos])
             balance = total_ingresos - total_egresos
             
-            # Desglosar ingresos por tipo
             ingresos_por_tipo = {}
-            for ingreso in ingresos:
-                tipo = ingreso[4]  # tipo_pago en posición 4
+            for ingreso in ingresos_periodo:
+                tipo = ingreso[4]
                 monto = float(ingreso[3])
                 ingresos_por_tipo[tipo] = ingresos_por_tipo.get(tipo, 0) + monto
             
-            # Desglosar egresos por tipo
             egresos_por_tipo = {}
             for egreso in egresos:
-                tipo = egreso[2]  # tipo_egreso en posición 2
+                tipo = egreso[2]
                 monto = float(egreso[1])
                 egresos_por_tipo[tipo] = egresos_por_tipo.get(tipo, 0) + monto
             
@@ -334,7 +432,7 @@ class FinanceController:
                         "total_ingresos": round(total_ingresos, 2),
                         "total_egresos": round(total_egresos, 2),
                         "balance": round(balance, 2),
-                        "cantidad_ingresos": len(ingresos),
+                        "cantidad_ingresos": len(ingresos_periodo),
                         "cantidad_egresos": len(egresos)
                     },
                     "desglose_ingresos": {k: round(v, 2) for k, v in ingresos_por_tipo.items()},
@@ -350,7 +448,6 @@ class FinanceController:
         try:
             from calendar import monthrange
             
-            # Calcular primer y último día del mes
             primer_dia = datetime(año, mes, 1).date()
             ultimo_dia = datetime(año, mes, monthrange(año, mes)[1]).date()
             
