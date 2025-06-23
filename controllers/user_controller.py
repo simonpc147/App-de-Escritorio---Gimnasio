@@ -59,11 +59,23 @@ class UserController:
             )
             
             if usuario_id:
+                if datos_usuario['rol'] == 'coach':
+                    from models.coach_model import CoachModel
+                    coach_model = CoachModel()
+                    coach_model.insert_coach(
+                        id_usuario=usuario_id,
+                        especialidades=None,
+                        horario_disponible=None,
+                        fecha_contratacion=None,
+                        salario=None
+                    )
+            
                 return {
                     "success": True, 
                     "message": f"Usuario {datos_usuario['rol']} creado exitosamente",
                     "usuario_id": usuario_id
                 }
+
             else:
                 return {"success": False, "message": "Error al crear el usuario"}
                 

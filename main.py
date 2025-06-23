@@ -14,6 +14,7 @@ from controllers.auth_controller import AuthController
 from controllers.user_controller import UserController
 from controllers.atleta_controller import AtletaController
 from controllers.finance_controller import FinanceController 
+from controllers.coach_controller import CoachController
 from views.login_view import LoginView
 from models.database import Database
 
@@ -30,6 +31,7 @@ class GimnasioApp:
         self.user_controller = UserController()
         self.atleta_controller = AtletaController()
         self.finance_controller = FinanceController() 
+        self.coach_controller = CoachController()
         self.db = Database()
         
         # Variables de sesión
@@ -865,6 +867,8 @@ class GimnasioApp:
         return True
 
 
+    # ==================== GESTION DE ATLETAS ====================
+
     def abrir_gestion_atletas(self):
         """Abre la gestión de atletas"""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
@@ -1296,10 +1300,6 @@ class GimnasioApp:
             except Exception as e:
                 messagebox.showerror("Error", f"Error: {e}")
 
-
-
-
-    
     def abrir_formulario_atleta(self, modo='registrar', atleta=None):
         """Abre el formulario modal para registrar/editar atleta con scrollbar"""
         # Crear ventana modal
@@ -1481,8 +1481,6 @@ class GimnasioApp:
             messagebox.showerror("Error de Datos", f"No se pudieron cargar todos los datos del atleta. Estructura de datos incompleta. {ie}")
         except Exception as e:
             messagebox.showerror("Error Inesperado", f"Ocurrió un error al cargar el formulario: {e}")
-
-        
 
     def crear_botones_atleta_form(self, parent, modo):
         """Crea los botones del formulario de atleta"""
@@ -1722,14 +1720,482 @@ class GimnasioApp:
         return True
 
 
+    # ==================== GESTION DE COACHES ====================
 
-    
     def abrir_gestion_coaches(self):
         """Abre la gestión de coaches"""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+        self.mostrar_gestion_coaches()
 
+    def mostrar_gestion_coaches(self):
+        """Muestra el módulo completo de gestión de coaches"""
+        self.limpiar_area_trabajo()
+        
+        # Variables para el módulo
+        self.coaches_data = []
+        self.coach_seleccionado = None
+        
+        # Título del módulo
+        title_frame = ttk.Frame(self.work_frame)
+        title_frame.pack(fill='x', pady=(0, 20))
+        
+        title_label = ttk.Label(
+            title_frame,
+            text="👨‍🏫 GESTIÓN PROFESIONAL DE COACHES",
+            font=('Segoe UI', 18, 'bold')
+        )
+        title_label.pack(side='left')
+        
+        # Botón de actualizar
+        refresh_btn = ttk.Button(
+            title_frame,
+            text="🔄 Actualizar",
+            command=self.cargar_coaches
+        )
+        refresh_btn.pack(side='right')
+        
+        # Frame de controles
+        controls_frame = ttk.Frame(self.work_frame)
+        controls_frame.pack(fill='x', pady=(0, 10))
+        
+        # Búsqueda simple
+        search_frame = ttk.Frame(controls_frame)
+        search_frame.pack(side='left', fill='x', expand=True)
+        
+        ttk.Label(search_frame, text="🔍 Buscar:").pack(side='left', padx=(0, 5))
+        
+        self.search_coaches_var = tk.StringVar()
+        self.search_coaches_entry = ttk.Entry(search_frame, textvariable=self.search_coaches_var, width=25)
+        self.search_coaches_entry.pack(side='left', padx=(0, 10))
+        self.search_coaches_var.trace('w', self.filtrar_coaches)
+        
+        # Botones de acción AJUSTADOS
+        buttons_frame = ttk.Frame(controls_frame)
+        buttons_frame.pack(side='right')
+        
+        self.edit_coach_btn = ttk.Button(
+            buttons_frame,
+            text="✏️ Editar Perfil",
+            command=self.editar_perfil_coach,
+            state='disabled'
+        )
+        self.edit_coach_btn.pack(side='left', padx=2)
+        
+        self.asignaciones_btn = ttk.Button(
+            buttons_frame,
+            text="👥 Gestionar Asignaciones",
+            command=self.gestionar_asignaciones_coach,
+            state='disabled'
+        )
+        self.asignaciones_btn.pack(side='left', padx=2)
+        
+        self.estadisticas_btn = ttk.Button(
+            buttons_frame,
+            text="📊 Ver Estadísticas",
+            command=self.ver_estadisticas_coach,
+            state='disabled'
+        )
+        self.estadisticas_btn.pack(side='left', padx=2)
+        
+        # Tabla de coaches (sin cambios)
+        self.crear_tabla_coaches()
+        
+        # Cargar datos iniciales
+        self.cargar_coaches()
+
+    def on_coach_selected(self, event):
+        """Maneja la selección de coach en la tabla"""
+        selection = self.coaches_tree.selection()
+        if selection:
+            # Habilitar botones
+            self.edit_coach_btn.config(state='normal')
+            self.asignaciones_btn.config(state='normal')
+            self.estadisticas_btn.config(state='normal')
             
+            # Obtener coach seleccionado
+            item = self.coaches_tree.item(selection[0])
+            coach_id = item['values'][0]
+            
+            # Buscar coach completo en los datos
+            for coach_completo in self.coaches_data:
+                if coach_completo['coach_data'][0] == coach_id:
+                    self.coach_seleccionado = coach_completo
+                    break
+        else:
+            # Deshabilitar botones
+            self.edit_coach_btn.config(state='disabled')
+            self.asignaciones_btn.config(state='disabled')
+            self.estadisticas_btn.config(state='disabled')
+            self.coach_seleccionado = None
+
+    def editar_perfil_coach(self):
+        """Abre formulario para editar SOLO datos profesionales del coach"""
+        if not self.coach_seleccionado:
+            messagebox.showwarning("Advertencia", "Selecciona un coach para editar")
+            return
+        
+        # Crear ventana modal
+        self.coach_edit_window = tk.Toplevel(self.root)
+        self.coach_edit_window.title("Editar Perfil Profesional")
+        self.coach_edit_window.geometry("450x400")
+        self.coach_edit_window.resizable(False, False)
+        self.coach_edit_window.transient(self.root)
+        self.coach_edit_window.grab_set()
+        
+        # Centrar ventana
+        x = (self.coach_edit_window.winfo_screenwidth() // 2) - 225
+        y = (self.coach_edit_window.winfo_screenheight() // 2) - 200
+        self.coach_edit_window.geometry(f"450x400+{x}+{y}")
+        
+        main_frame = ttk.Frame(self.coach_edit_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        coach_data = self.coach_seleccionado['coach_data']
+        usuario_data = self.coach_seleccionado['usuario_data']
+        
+        # Título con nombre del coach
+        title_label = ttk.Label(
+            main_frame,
+            text=f"✏️ PERFIL PROFESIONAL\n{usuario_data[1]} {usuario_data[2]}",
+            font=('Segoe UI', 14, 'bold'),
+            justify='center'
+        )
+        title_label.pack(pady=(0, 20))
+        
+        # Variables del formulario
+        self.edit_coach_vars = {
+            'especialidades': tk.StringVar(value=coach_data[2] if coach_data[2] else ''),
+            'horario_disponible': tk.StringVar(value=coach_data[3] if coach_data[3] else ''),
+            'salario': tk.StringVar(value=str(coach_data[5]) if coach_data[5] else ''),
+            'fecha_contratacion': tk.StringVar(value=str(coach_data[4]) if coach_data[4] else '')
+        }
+        
+        # Campos del formulario
+        fields_frame = ttk.LabelFrame(main_frame, text="Datos Profesionales", padding=15)
+        fields_frame.pack(fill='x', pady=(0, 20))
+        
+        # Especialidades
+        ttk.Label(fields_frame, text="Especialidades:").grid(row=0, column=0, sticky='w', pady=5)
+        ttk.Entry(fields_frame, textvariable=self.edit_coach_vars['especialidades'], width=35).grid(row=0, column=1, sticky='ew', padx=(10, 0), pady=5)
+        
+        # Horario disponible
+        ttk.Label(fields_frame, text="Horario Disponible:").grid(row=1, column=0, sticky='w', pady=5)
+        ttk.Entry(fields_frame, textvariable=self.edit_coach_vars['horario_disponible'], width=35).grid(row=1, column=1, sticky='ew', padx=(10, 0), pady=5)
+        
+        # Salario
+        ttk.Label(fields_frame, text="Salario:").grid(row=2, column=0, sticky='w', pady=5)
+        ttk.Entry(fields_frame, textvariable=self.edit_coach_vars['salario'], width=35).grid(row=2, column=1, sticky='ew', padx=(10, 0), pady=5)
+        
+        # Fecha de contratación
+        ttk.Label(fields_frame, text="Fecha Contratación:").grid(row=3, column=0, sticky='w', pady=5)
+        fecha_frame = ttk.Frame(fields_frame)
+        fecha_frame.grid(row=3, column=1, sticky='ew', padx=(10, 0), pady=5)
+        ttk.Entry(fecha_frame, textvariable=self.edit_coach_vars['fecha_contratacion'], width=25).pack(side='left')
+        ttk.Label(fecha_frame, text="(YYYY-MM-DD)", font=('Segoe UI', 8)).pack(side='left', padx=(5, 0))
+        
+        fields_frame.grid_columnconfigure(1, weight=1)
+        
+        # Botones
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(fill='x')
+        
+        ttk.Button(buttons_frame, text="❌ Cancelar", command=self.coach_edit_window.destroy).pack(side='right', padx=(5, 0))
+        ttk.Button(buttons_frame, text="💾 Guardar Cambios", command=self.guardar_perfil_coach).pack(side='right')
+
+    def guardar_perfil_coach(self):
+        """Guarda los cambios del perfil profesional"""
+        try:
+            datos_coach = {
+                'especialidades': self.edit_coach_vars['especialidades'].get().strip(),
+                'horario_disponible': self.edit_coach_vars['horario_disponible'].get().strip(),
+                'fecha_contratacion': self.edit_coach_vars['fecha_contratacion'].get().strip(),
+                'salario': self.edit_coach_vars['salario'].get().strip()
+            }
+            
+            # Validar salario
+            if datos_coach['salario']:
+                try:
+                    datos_coach['salario'] = float(datos_coach['salario'])
+                except ValueError:
+                    messagebox.showerror("Error", "El salario debe ser un número válido")
+                    return
+            
+            # Validar fecha
+            if datos_coach['fecha_contratacion']:
+                try:
+                    from datetime import datetime
+                    datetime.strptime(datos_coach['fecha_contratacion'], '%Y-%m-%d')
+                except ValueError:
+                    messagebox.showerror("Error", "Fecha inválida. Usa formato YYYY-MM-DD")
+                    return
+            
+            coach_id = self.coach_seleccionado['coach_data'][0]
+            resultado = self.coach_controller.actualizar_perfil_coach(
+                coach_id, datos_coach, self.usuario_actual['id']
+            )
+            
+            if resultado['success']:
+                messagebox.showinfo("Éxito", resultado['message'])
+                self.coach_edit_window.destroy()
+                self.cargar_coaches()
+            else:
+                messagebox.showerror("Error", resultado['message'])
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar: {e}")
+
+    def gestionar_asignaciones_coach(self):
+        """Gestiona asignaciones del coach seleccionado"""
+        if not self.coach_seleccionado:
+            messagebox.showwarning("Advertencia", "Selecciona un coach")
+            return
+        
+        coach_data = self.coach_seleccionado['coach_data']
+        usuario_data = self.coach_seleccionado['usuario_data']
+        coach_id = coach_data[0]
+        
+        # Ventana de gestión de asignaciones
+        asign_window = tk.Toplevel(self.root)
+        asign_window.title(f"Gestionar Asignaciones - {usuario_data[1]} {usuario_data[2]}")
+        asign_window.geometry("700x500")
+        asign_window.transient(self.root)
+        
+        main_frame = ttk.Frame(asign_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        # Título
+        ttk.Label(main_frame, 
+                text=f"👥 ASIGNACIONES DE {usuario_data[1]} {usuario_data[2]}", 
+                font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
+        
+        # Obtener atletas asignados
+        resultado = self.coach_controller.obtener_atletas_por_coach(coach_id)
+        
+        if resultado["success"]:
+            atletas = resultado["atletas"]
+            
+            if atletas:
+                # Lista de atletas asignados
+                atletas_frame = ttk.LabelFrame(main_frame, text="Atletas Asignados", padding=15)
+                atletas_frame.pack(fill='both', expand=True, pady=(0, 15))
+                
+                # Crear treeview para atletas
+                columns = ('Atleta', 'Email', 'Fecha Asignación', 'Estado')
+                atletas_tree = ttk.Treeview(atletas_frame, columns=columns, show='headings', height=10)
+                
+                for col in columns:
+                    atletas_tree.heading(col, text=col)
+                    atletas_tree.column(col, width=150)
+                
+                for atleta in atletas:
+                    estado = "🟢 Activo" if atleta['estado_activo'] else "🔴 Finalizado"
+                    atletas_tree.insert('', 'end', values=(
+                        atleta['nombre_completo'],
+                        atleta['email'],
+                        atleta['fecha_asignacion'],
+                        estado
+                    ))
+                
+                atletas_tree.pack(fill='both', expand=True)
+            else:
+                ttk.Label(main_frame, text="👤 No tiene atletas asignados actualmente", 
+                        font=('Segoe UI', 12)).pack(pady=30)
+        
+        # Botón cerrar
+        ttk.Button(main_frame, text="Cerrar", command=asign_window.destroy).pack(pady=15)
+
+    def ver_estadisticas_coach(self):
+        """Muestra estadísticas del coach seleccionado"""
+        if not self.coach_seleccionado:
+            messagebox.showwarning("Advertencia", "Selecciona un coach")
+            return
+        
+        coach_data = self.coach_seleccionado['coach_data']
+        usuario_data = self.coach_seleccionado['usuario_data']
+        coach_id = coach_data[0]
+        
+        # Generar reporte
+        resultado = self.coach_controller.generar_reporte_coach(coach_id)
+        
+        if resultado["success"]:
+            reporte = resultado["reporte"]
+            stats = reporte["estadisticas"]
+            
+            # Ventana de estadísticas
+            stats_window = tk.Toplevel(self.root)
+            stats_window.title(f"Estadísticas - {usuario_data[1]} {usuario_data[2]}")
+            stats_window.geometry("500x400")
+            stats_window.transient(self.root)
+            
+            main_frame = ttk.Frame(stats_window, padding=20)
+            main_frame.pack(fill='both', expand=True)
+            
+            # Título
+            ttk.Label(main_frame, 
+                    text=f"📊 ESTADÍSTICAS\n{usuario_data[1]} {usuario_data[2]}", 
+                    font=('Segoe UI', 14, 'bold'),
+                    justify='center').pack(pady=(0, 20))
+            
+            # Frame de estadísticas
+            stats_frame = ttk.LabelFrame(main_frame, text="Resumen de Rendimiento", padding=15)
+            stats_frame.pack(fill='x', pady=(0, 15))
+            
+            # Mostrar estadísticas
+            estadisticas = [
+                f"👥 Atletas Actuales: {stats['atletas_actuales']}",
+                f"📈 Total Atletas Histórico: {stats['total_atletas_historico']}",
+                f"⏱️ Tiempo Promedio por Atleta: {stats['tiempo_promedio_asignacion_dias']} días",
+                f"💰 Salario: ${coach_data[5]:.2f}" if coach_data[5] else "💰 Salario: No especificado",
+                f"🎯 Especialidades: {coach_data[2] if coach_data[2] else 'No especificado'}",
+                f"📅 Contratado desde: {coach_data[4] if coach_data[4] else 'No especificado'}"
+            ]
+            
+            for stat in estadisticas:
+                ttk.Label(stats_frame, text=stat, font=('Segoe UI', 10)).pack(anchor='w', pady=2)
+            
+            # Botón cerrar
+            ttk.Button(main_frame, text="Cerrar", command=stats_window.destroy).pack(pady=15)
+            
+        else:
+            messagebox.showerror("Error", resultado["message"])
+
+    def cargar_coaches(self):
+        """Carga los coaches desde la base de datos"""
+        try:
+            print("🔄 Cargando coaches...")
+            
+            # Obtener coaches del controlador
+            resultado = self.coach_controller.obtener_todos_coaches()
+            if not resultado["success"]:
+                messagebox.showerror("Error", resultado["message"])
+                return
+            
+            self.coaches_data = resultado["coaches"]
+            print(f"✅ Cargados {len(self.coaches_data)} coaches")
+            
+            # Actualizar tabla
+            self.actualizar_tabla_coaches()
+            
+        except Exception as e:
+            print(f"❌ Error cargando coaches: {e}")
+            messagebox.showerror("Error", f"Error al cargar coaches:\n{e}")
+
+
+    def crear_tabla_coaches(self):
+        """Crea la tabla de coaches con Treeview"""
+        # Frame para la tabla
+        table_frame = ttk.Frame(self.work_frame)
+        table_frame.pack(fill='both', expand=True, pady=10)
+        
+        # Configurar Treeview
+        columns = ('ID', 'Nombre Completo', 'Email', 'Especialidades', 'Salario', 'Atletas Asignados', 'Fecha Contratación', 'Estado')
+        self.coaches_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
+        
+        # Configurar encabezados
+        for col in columns:
+            self.coaches_tree.heading(col, text=col)
+        
+        # Configurar anchos
+        self.coaches_tree.column('ID', width=50, anchor='center')
+        self.coaches_tree.column('Nombre Completo', width=150)
+        self.coaches_tree.column('Email', width=180)
+        self.coaches_tree.column('Especialidades', width=150)
+        self.coaches_tree.column('Salario', width=100, anchor='center')
+        self.coaches_tree.column('Atletas Asignados', width=120, anchor='center')
+        self.coaches_tree.column('Fecha Contratación', width=120, anchor='center')
+        self.coaches_tree.column('Estado', width=80, anchor='center')
+        
+        # Scrollbars
+        v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.coaches_tree.yview)
+        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.coaches_tree.xview)
+        self.coaches_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        
+        # Empaquetar
+        self.coaches_tree.pack(side='left', fill='both', expand=True)
+        v_scrollbar.pack(side='right', fill='y')
+        h_scrollbar.pack(side='bottom', fill='x')
+        
+        # Eventos
+        self.coaches_tree.bind('<<TreeviewSelect>>', self.on_coach_selected)
+
+    def actualizar_tabla_coaches(self, coaches_filtrados=None):
+        """Actualiza la tabla con los coaches"""
+        # Limpiar tabla
+        for item in self.coaches_tree.get_children():
+            self.coaches_tree.delete(item)
+        
+        # Usar coaches filtrados o todos
+        coaches = coaches_filtrados if coaches_filtrados is not None else self.coaches_data
+        
+        # Llenar tabla
+        for coach_completo in coaches:
+            try:
+                coach_data = coach_completo['coach_data']
+                usuario_data = coach_completo['usuario_data']
+                
+                # Extraer datos
+                coach_id = coach_data[0]
+                nombre_completo = f"{usuario_data[1]} {usuario_data[2]}"
+                email = usuario_data[6]
+                especialidades = coach_data[2] if coach_data[2] else "No especificado"
+                salario = f"${coach_data[5]:.2f}" if coach_data[5] else "$0.00"
+                
+                # Contar atletas asignados
+                atletas_asignados = self.coach_controller.contar_atletas_asignados(coach_id)
+                
+                # Fecha de contratación
+                try:
+                    if coach_data[4]:
+                        if isinstance(coach_data[4], str):
+                            fecha_contratacion = coach_data[4][:10]
+                        else:
+                            fecha_contratacion = str(coach_data[4])[:10]
+                    else:
+                        fecha_contratacion = "N/A"
+                except:
+                    fecha_contratacion = "N/A"
+                
+                # Estado (basado en si el usuario está activo)
+                estado = "🟢 Activo" if usuario_data[9] else "🔴 Inactivo"
+                
+                # Insertar fila
+                self.coaches_tree.insert('', 'end', values=(
+                    coach_id, nombre_completo, email, especialidades, salario, 
+                    atletas_asignados, fecha_contratacion, estado
+                ))
+                    
+            except Exception as e:
+                print(f"Error procesando coach: {e}")
+                continue
+
+    def filtrar_coaches(self, *args):
+        """Filtra coaches según búsqueda"""
+        search_text = self.search_coaches_var.get().lower()
+        
+        if not search_text:
+            self.actualizar_tabla_coaches()
+            return
+        
+        coaches_filtrados = []
+        
+        for coach_completo in self.coaches_data:
+            try:
+                usuario_data = coach_completo['usuario_data']
+                coach_data = coach_completo['coach_data']
+                
+                # Texto de búsqueda
+                texto_busqueda = f"{usuario_data[1]} {usuario_data[2]} {usuario_data[6]} {coach_data[2] or ''}".lower()
+                
+                if search_text in texto_busqueda:
+                    coaches_filtrados.append(coach_completo)
+                    
+            except Exception as e:
+                print(f"Error filtrando coach: {e}")
+                continue
+        
+        self.actualizar_tabla_coaches(coaches_filtrados)
+    # ==================== GESTION DE PAGOS ====================       
         
     def abrir_gestion_pagos(self):
          """Abre la gestión de pagos"""
@@ -1772,10 +2238,10 @@ class GimnasioApp:
         
         # Cargar datos iniciales
         self.cargar_pagos()
-
+    
     
     def crear_filtros_pagos(self, parent):
-        """Crea los filtros para la gestión de pagos"""
+        """Crea los filtros para la gestión de pagos - VERSIÓN OPTIMIZADA"""
         filter_frame = ttk.Frame(parent)
         filter_frame.pack(fill='x')
 
@@ -1798,16 +2264,27 @@ class GimnasioApp:
         tipo_pago_combo.pack(side='left', padx=(0, 15))
         tipo_pago_combo.bind('<<ComboboxSelected>>', self.filtrar_pagos)
 
-        # Filtros de fecha
+        # REEMPLAZAR DateEntry por Entry simple
         ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(10, 5))
-        self.fecha_desde_pagos = DateEntry(filter_frame, width=10, date_pattern='yyyy-mm-dd')
-        self.fecha_desde_pagos.set_date(datetime.now() - timedelta(days=30))
-        self.fecha_desde_pagos.pack(side='left', padx=(0, 10))
+        self.fecha_desde_var = tk.StringVar()
+        self.fecha_desde_entry = ttk.Entry(filter_frame, textvariable=self.fecha_desde_var, width=12)
+        self.fecha_desde_entry.pack(side='left', padx=(0, 5))
+        
+        # Valor por defecto (hace 30 días)
+        fecha_default = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+        self.fecha_desde_var.set(fecha_default)
+        
+        ttk.Label(filter_frame, text="(YYYY-MM-DD)", font=('Segoe UI', 8)).pack(side='left', padx=(0, 10))
 
         ttk.Label(filter_frame, text="Hasta:").pack(side='left', padx=(0, 5))
-        self.fecha_hasta_pagos = DateEntry(filter_frame, width=10, date_pattern='yyyy-mm-dd')
-        self.fecha_hasta_pagos.set_date(datetime.now())
-        self.fecha_hasta_pagos.pack(side='left', padx=(0, 10))
+        self.fecha_hasta_var = tk.StringVar()
+        self.fecha_hasta_entry = ttk.Entry(filter_frame, textvariable=self.fecha_hasta_var, width=12)
+        self.fecha_hasta_entry.pack(side='left', padx=(0, 5))
+        
+        # Valor por defecto (hoy)
+        self.fecha_hasta_var.set(datetime.now().strftime('%Y-%m-%d'))
+        
+        ttk.Label(filter_frame, text="(YYYY-MM-DD)", font=('Segoe UI', 8)).pack(side='left', padx=(0, 10))
 
         ttk.Button(filter_frame, text="🔍 Aplicar Fechas", command=self.filtrar_pagos).pack(side='left', padx=(0,20))
 
@@ -1817,6 +2294,19 @@ class GimnasioApp:
 
         self.delete_pago_btn = ttk.Button(filter_frame, text="🗑️ Eliminar Pago", command=self._eliminar_pago_action, state='disabled')
         self.delete_pago_btn.pack(side='left', padx=5)
+
+   
+    def cargar_pagos(self):
+        """Carga todos los pagos usando el controlador - VERSIÓN OPTIMIZADA"""
+        try:
+            # Mostrar indicador de carga
+            self._mostrar_loading_pagos()
+            
+            # Usar after para no bloquear la UI
+            self.root.after(50, self._cargar_pagos_async)
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Error crítico al cargar pagos: {e}")
 
     def crear_tabla_pagos(self):
         """Crea la tabla (Treeview) para mostrar los pagos"""
@@ -1845,8 +2335,31 @@ class GimnasioApp:
 
         self.pagos_tree.bind('<<TreeviewSelect>>', self.on_pago_selected)
 
-    def cargar_pagos(self):
-        """Carga todos los pagos usando el controlador y los muestra en la tabla"""
+
+    def _mostrar_loading_reporte(self):
+        """Muestra loading en el reporte"""
+        # Limpiar tabla
+        self.reporte_detalles_tree.delete(*self.reporte_detalles_tree.get_children())
+        
+        # Mostrar loading
+        self.reporte_detalles_tree.insert('', 'end', values=("🔄", "Generando reporte...", ""))
+        
+        # Actualizar labels
+        self.resumen_ingresos_label.config(text="Total Ingresos: Calculando...")
+        self.resumen_egresos_label.config(text="Total Egresos: Calculando...")
+        self.resumen_balance_label.config(text="Balance: Calculando...")
+   
+    def _mostrar_loading_pagos(self):
+        """Muestra indicador de carga en la tabla"""
+        # Limpiar tabla
+        for item in self.pagos_tree.get_children():
+            self.pagos_tree.delete(item)
+        
+        # Mostrar mensaje de carga
+        self.pagos_tree.insert('', 'end', values=("", "", "🔄 Cargando pagos...", "", "", "", "", "", ""))
+
+    def _cargar_pagos_async(self):
+        """Carga los pagos de forma asíncrona"""
         try:
             resultado = self.finance_controller.obtener_ingresos_detallados()
             if resultado['success']:
@@ -1854,8 +2367,14 @@ class GimnasioApp:
                 self.actualizar_tabla_pagos()
                 print(f"✅ Cargados {len(self.pagos_data)} registros de pago.")
             else:
+                # Limpiar tabla si hay error
+                for item in self.pagos_tree.get_children():
+                    self.pagos_tree.delete(item)
                 messagebox.showerror("Error", f"No se pudieron cargar los pagos: {resultado['message']}")
         except Exception as e:
+            # Limpiar tabla si hay error
+            for item in self.pagos_tree.get_children():
+                self.pagos_tree.delete(item)
             messagebox.showerror("Error", f"Error crítico al cargar pagos: {e}")
 
     def actualizar_tabla_pagos(self, pagos_filtrados=None):
@@ -1880,31 +2399,63 @@ class GimnasioApp:
             )
             self.pagos_tree.insert('', 'end', values=values)
 
+   
     def filtrar_pagos(self, *args):
-        """Filtra los pagos según los criterios de búsqueda y filtros"""
+        """Filtra los pagos según los criterios de búsqueda y filtros - VERSIÓN OPTIMIZADA"""
         search_text = self.search_pagos_var.get().lower()
         tipo_pago_filter = self.tipo_pago_filter_var.get()
-        fecha_desde = self.fecha_desde_pagos.get_date()
-        fecha_hasta = self.fecha_hasta_pagos.get_date()
+        
+        # Validación segura de fechas
+        fecha_desde = None
+        fecha_hasta = None
+        
+        try:
+            fecha_desde_str = self.fecha_desde_var.get().strip()
+            if fecha_desde_str:
+                fecha_desde = datetime.strptime(fecha_desde_str, '%Y-%m-%d').date()
+        except (ValueError, AttributeError):
+            fecha_desde = None
+        
+        try:
+            fecha_hasta_str = self.fecha_hasta_var.get().strip()
+            if fecha_hasta_str:
+                fecha_hasta = datetime.strptime(fecha_hasta_str, '%Y-%m-%d').date()
+        except (ValueError, AttributeError):
+            fecha_hasta = None
 
         pagos_filtrados = []
         for pago in self.pagos_data:
-            # Filtro por fecha
-            if not (fecha_desde <= pago['fecha_pago'] <= fecha_hasta):
-                continue
+            # Filtro por fecha (solo si ambas fechas son válidas)
+            if fecha_desde and fecha_hasta:
+                try:
+                    if not (fecha_desde <= pago['fecha_pago'] <= fecha_hasta):
+                        continue
+                except (TypeError, KeyError):
+                    # Si hay problema con la fecha del pago, incluirlo
+                    pass
             
             # Filtro por tipo de pago
-            if tipo_pago_filter != "Todos" and tipo_pago_filter.lower() not in pago['tipo_pago'].lower():
-                continue
+            if tipo_pago_filter != "Todos":
+                try:
+                    if tipo_pago_filter.lower() not in pago['tipo_pago'].lower():
+                        continue
+                except (KeyError, AttributeError):
+                    continue
 
             # Filtro por texto de búsqueda
-            texto_busqueda = f"{pago['nombre_atleta']} {pago['descripcion']}".lower()
-            if search_text and search_text not in texto_busqueda:
-                continue
+            if search_text:
+                try:
+                    texto_busqueda = f"{pago['nombre_atleta']} {pago['descripcion']}".lower()
+                    if search_text not in texto_busqueda:
+                        continue
+                except (KeyError, AttributeError):
+                    continue
 
             pagos_filtrados.append(pago)
         
         self.actualizar_tabla_pagos(pagos_filtrados)
+
+
 
     def on_pago_selected(self, event):
         """Maneja la selección de un pago en la tabla y activa/desactiva botones."""
@@ -2032,84 +2583,118 @@ class GimnasioApp:
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
         self.mostrar_reportes_financieros()
-    # PEGA ESTOS DOS NUEVOS MÉTODOS EN TU CLASE GimnasioApp
 
     def mostrar_reportes_financieros(self):
-        """Crea y muestra la interfaz para el módulo de Reportes Financieros."""
+        """Crea y muestra la interfaz para el módulo de Reportes Financieros - VERSIÓN OPTIMIZADA"""
         self.limpiar_area_trabajo()
 
         # Título del módulo
-        ttk.Label(self.work_frame, text="📊 REPORTES FINANCIEROS", font=('Segoe UI', 18, 'bold')).pack(pady=(0, 20))
-
-        # --- Frame de Filtros ---
-        filter_frame = ttk.Frame(self.work_frame)
-        filter_frame.pack(fill='x', pady=5)
-
-        ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(0, 5))
-        self.reporte_fecha_desde = DateEntry(filter_frame, width=12, date_pattern='yyyy-mm-dd')
-        self.reporte_fecha_desde.set_date(datetime.now() - timedelta(days=30))
-        self.reporte_fecha_desde.pack(side='left', padx=(0, 20))
-
-        ttk.Label(filter_frame, text="Hasta:").pack(side='left', padx=(0, 5))
-        self.reporte_fecha_hasta = DateEntry(filter_frame, width=12, date_pattern='yyyy-mm-dd')
-        self.reporte_fecha_hasta.set_date(datetime.now())
-        self.reporte_fecha_hasta.pack(side='left', padx=(0, 20))
-
-        ttk.Button(filter_frame, text="📈 Generar Reporte", command=self._generar_y_mostrar_reporte_action).pack(side='left')
-
-        ttk.Separator(self.work_frame, orient='horizontal').pack(fill='x', pady=15)
-
-        # --- Frame de Resumen ---
-        resumen_frame = ttk.LabelFrame(self.work_frame, text="Resumen del Período", padding=15)
-        resumen_frame.pack(fill='x', pady=10)
-
-        # Usamos StringVars para actualizar fácilmente los textos
-        self.resumen_ingresos_var = tk.StringVar(value="Total Ingresos: $0.00")
-        self.resumen_egresos_var = tk.StringVar(value="Total Egresos: $0.00")
-        self.resumen_balance_var = tk.StringVar(value="Balance: $0.00")
-
-        ttk.Label(resumen_frame, textvariable=self.resumen_ingresos_var, font=('Segoe UI', 12, 'bold'), foreground=self.colores['success']).pack(side='left', padx=20)
-        ttk.Label(resumen_frame, textvariable=self.resumen_egresos_var, font=('Segoe UI', 12, 'bold'), foreground=self.colores['error']).pack(side='left', padx=20)
-        ttk.Label(resumen_frame, textvariable=self.resumen_balance_var, font=('Segoe UI', 14, 'bold'), foreground=self.colores['primario']).pack(side='right', padx=20)
-
-        # --- Frame de Detalles ---
-        details_frame = ttk.Frame(self.work_frame)
-        details_frame.pack(fill='both', expand=True, pady=10)
-        details_frame.grid_columnconfigure(0, weight=1)
-        details_frame.grid_columnconfigure(1, weight=1) # Dos columnas de igual tamaño
-
-        # Tabla de Desglose de Ingresos
-        ingresos_frame = ttk.LabelFrame(details_frame, text="Desglose de Ingresos", padding=10)
-        ingresos_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        title_frame = ttk.Frame(self.work_frame)
+        title_frame.pack(fill='x', pady=(0, 15))
         
-        self.reporte_ingresos_tree = ttk.Treeview(ingresos_frame, columns=('Tipo', 'Monto'), show='headings')
-        self.reporte_ingresos_tree.heading('Tipo', text='Tipo de Ingreso')
-        self.reporte_ingresos_tree.heading('Monto', text='Monto Total')
-        self.reporte_ingresos_tree.column('Monto', anchor='e')
-        self.reporte_ingresos_tree.pack(fill='both', expand=True)
+        ttk.Label(title_frame, text="📊 REPORTES FINANCIEROS", 
+                font=('Segoe UI', 18, 'bold')).pack(side='left')
 
-        # Tabla de Desglose de Egresos
-        egresos_frame = ttk.LabelFrame(details_frame, text="Desglose de Egresos", padding=10)
-        egresos_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+        # --- Frame de Filtros SIMPLIFICADO ---
+        filter_frame = ttk.LabelFrame(self.work_frame, text="Período de Análisis", padding=10)
+        filter_frame.pack(fill='x', pady=(0, 15))
 
-        self.reporte_egresos_tree = ttk.Treeview(egresos_frame, columns=('Tipo', 'Monto'), show='headings')
-        self.reporte_egresos_tree.heading('Tipo', text='Tipo de Egreso')
-        self.reporte_egresos_tree.heading('Monto', text='Monto Total')
-        self.reporte_egresos_tree.column('Monto', anchor='e')
-        self.reporte_egresos_tree.pack(fill='both', expand=True)
+        # Una sola fila para fechas
+        dates_frame = ttk.Frame(filter_frame)
+        dates_frame.pack()
 
-        # Generar reporte inicial para el último mes
+        ttk.Label(dates_frame, text="Desde:").pack(side='left', padx=(0, 5))
+        self.reporte_fecha_desde_var = tk.StringVar()
+        self.reporte_fecha_desde_entry = ttk.Entry(dates_frame, textvariable=self.reporte_fecha_desde_var, width=12)
+        self.reporte_fecha_desde_entry.pack(side='left', padx=(0, 20))
+        
+        # Valor por defecto
+        self.reporte_fecha_desde_var.set((datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+
+        ttk.Label(dates_frame, text="Hasta:").pack(side='left', padx=(0, 5))
+        self.reporte_fecha_hasta_var = tk.StringVar()
+        self.reporte_fecha_hasta_entry = ttk.Entry(dates_frame, textvariable=self.reporte_fecha_hasta_var, width=12)
+        self.reporte_fecha_hasta_entry.pack(side='left', padx=(0, 20))
+        
+        # Valor por defecto
+        self.reporte_fecha_hasta_var.set(datetime.now().strftime('%Y-%m-%d'))
+
+        ttk.Button(dates_frame, text="📈 Generar Reporte", 
+                command=self._generar_y_mostrar_reporte_action).pack(side='left', padx=(20, 0))
+
+        ttk.Separator(self.work_frame, orient='horizontal').pack(fill='x', pady=10)
+
+        # --- Frame de Resumen SIMPLIFICADO ---
+        resumen_frame = ttk.LabelFrame(self.work_frame, text="Resumen del Período", padding=15)
+        resumen_frame.pack(fill='x', pady=(0, 15))
+
+        # Labels directos en lugar de StringVars
+        self.resumen_ingresos_label = ttk.Label(resumen_frame, text="Total Ingresos: $0.00", 
+                                            font=('Segoe UI', 12, 'bold'), foreground='green')
+        self.resumen_ingresos_label.pack(side='left', padx=20)
+
+        self.resumen_egresos_label = ttk.Label(resumen_frame, text="Total Egresos: $0.00", 
+                                            font=('Segoe UI', 12, 'bold'), foreground='red')
+        self.resumen_egresos_label.pack(side='left', padx=20)
+
+        self.resumen_balance_label = ttk.Label(resumen_frame, text="Balance: $0.00", 
+                                            font=('Segoe UI', 14, 'bold'), foreground='blue')
+        self.resumen_balance_label.pack(side='right', padx=20)
+
+        # --- Frame de Detalles SIMPLIFICADO (Una sola tabla) ---
+        details_frame = ttk.LabelFrame(self.work_frame, text="Desglose Detallado", padding=10)
+        details_frame.pack(fill='both', expand=True, pady=10)
+
+        # Una sola tabla para todo
+        columns = ('Categoría', 'Tipo', 'Monto')
+        self.reporte_detalles_tree = ttk.Treeview(details_frame, columns=columns, show='headings')
+        
+        for col in columns:
+            self.reporte_detalles_tree.heading(col, text=col)
+        
+        self.reporte_detalles_tree.column('Categoría', width=120)
+        self.reporte_detalles_tree.column('Tipo', width=200)
+        self.reporte_detalles_tree.column('Monto', width=120, anchor='e')
+
+        # Scrollbar
+        scrollbar_detalles = ttk.Scrollbar(details_frame, orient='vertical', 
+                                        command=self.reporte_detalles_tree.yview)
+        self.reporte_detalles_tree.configure(yscrollcommand=scrollbar_detalles.set)
+
+        self.reporte_detalles_tree.pack(side='left', fill='both', expand=True)
+        scrollbar_detalles.pack(side='right', fill='y')
+
+        # Generar reporte inicial
         self._generar_y_mostrar_reporte_action()
+    
 
     def _generar_y_mostrar_reporte_action(self):
-        """Función interna que llama al controlador y actualiza la UI del reporte."""
-        fecha_inicio = self.reporte_fecha_desde.get_date()
-        fecha_fin = self.reporte_fecha_hasta.get_date()
-
-        if fecha_inicio > fecha_fin:
-            messagebox.showerror("Error de Fechas", "La fecha 'Desde' no puede ser posterior a la fecha 'Hasta'.")
+        """Función que llama al controlador y actualiza la UI del reporte - VERSIÓN OPTIMIZADA"""
+        
+        # Validación de fechas
+        try:
+            fecha_inicio_str = self.reporte_fecha_desde_var.get().strip()
+            fecha_fin_str = self.reporte_fecha_hasta_var.get().strip()
+            
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            
+            if fecha_inicio > fecha_fin:
+                messagebox.showerror("Error de Fechas", "La fecha 'Desde' no puede ser posterior a la fecha 'Hasta'.")
+                return
+                
+        except ValueError:
+            messagebox.showerror("Error de Formato", "Formato de fecha inválido. Use YYYY-MM-DD")
             return
 
+        # Mostrar loading
+        self._mostrar_loading_reporte()
+        
+        # Usar after para no bloquear UI
+        self.root.after(50, lambda: self._ejecutar_reporte_async(fecha_inicio, fecha_fin))
+
+    def _ejecutar_reporte_async(self, fecha_inicio, fecha_fin):
+        """Ejecuta el reporte de forma asíncrona"""
         try:
             resultado = self.finance_controller.generar_reporte_financiero(fecha_inicio, fecha_fin)
 
@@ -2122,28 +2707,32 @@ class GimnasioApp:
             desglose_ingresos = reporte['desglose_ingresos']
             desglose_egresos = reporte['desglose_egresos']
 
-            self.resumen_ingresos_var.set(f"Total Ingresos: ${resumen['total_ingresos']:.2f}")
-            self.resumen_egresos_var.set(f"Total Egresos: ${resumen['total_egresos']:.2f}")
-            balance_color = self.colores['success'] if resumen['balance'] >= 0 else self.colores['error']
-            self.resumen_balance_var.set(f"Balance: ${resumen['balance']:.2f}")
+            # Actualizar resumen
+            self.resumen_ingresos_label.config(text=f"Total Ingresos: ${resumen['total_ingresos']:.2f}")
+            self.resumen_egresos_label.config(text=f"Total Egresos: ${resumen['total_egresos']:.2f}")
+            
+            balance_color = 'green' if resumen['balance'] >= 0 else 'red'
+            self.resumen_balance_label.config(text=f"Balance: ${resumen['balance']:.2f}", 
+                                            foreground=balance_color)
 
-            self.reporte_ingresos_tree.delete(*self.reporte_ingresos_tree.get_children())
+            # Limpiar y actualizar tabla
+            self.reporte_detalles_tree.delete(*self.reporte_detalles_tree.get_children())
+            
+            # Agregar ingresos
             for tipo, monto in desglose_ingresos.items():
                 tipo_legible = tipo.replace('_', ' ').title()
-                self.reporte_ingresos_tree.insert('', 'end', values=(tipo_legible, f"${monto:.2f}"))
-
-            # Actualizar Tabla de Egresos
-            self.reporte_egresos_tree.delete(*self.reporte_egresos_tree.get_children())
+                self.reporte_detalles_tree.insert('', 'end', values=("📈 INGRESO", tipo_legible, f"${monto:.2f}"))
+            
+            # Agregar egresos
             for tipo, monto in desglose_egresos.items():
                 tipo_legible = tipo.replace('_', ' ').title()
-                self.reporte_egresos_tree.insert('', 'end', values=(tipo_legible, f"${monto:.2f}"))
+                self.reporte_detalles_tree.insert('', 'end', values=("📉 EGRESO", tipo_legible, f"${monto:.2f}"))
 
         except Exception as e:
             messagebox.showerror("Error Crítico", f"Ocurrió un error al procesar el reporte: {e}")
             import traceback
             traceback.print_exc()
-        
-    
+
     # def abrir_configuracion(self):
     #     """Abre la configuración"""
     #     if not self.verificar_permisos(['admin_principal']):
@@ -2152,7 +2741,8 @@ class GimnasioApp:
     #                                  "Módulo para configurar parámetros del sistema.")
     
     
-    # Métodos específicos para otros roles
+     # ==================== OTRA GESTION ====================       
+
     def abrir_mis_atletas(self):
         """Abre los atletas del coach"""
         self.mostrar_modulo_pendiente("👥 MIS ATLETAS", 
