@@ -2,13 +2,18 @@
 import tkinter as tk
 import tkinter.simpledialog
 from tkinter import ttk, messagebox
+# Asegúrate de importar DateEntry si aún no está
+from tkcalendar import DateEntry
 import sys
 import os
+from datetime import datetime, timedelta
 
 # Importar controladores y vistas
+# (Asegúrate de que FinanceController esté importado si vas a usarlo directamente)
 from controllers.auth_controller import AuthController
 from controllers.user_controller import UserController
 from controllers.atleta_controller import AtletaController
+from controllers.finance_controller import FinanceController 
 from views.login_view import LoginView
 from models.database import Database
 
@@ -24,6 +29,7 @@ class GimnasioApp:
         self.auth_controller = AuthController()
         self.user_controller = UserController()
         self.atleta_controller = AtletaController()
+        self.finance_controller = FinanceController() 
         self.db = Database()
         
         # Variables de sesión
@@ -35,6 +41,7 @@ class GimnasioApp:
         
         # Verificar conexión a BD e inicializar
         self.inicializar_aplicacion()
+        
     
     def configurar_estilos(self):
         """Configura estilos globales de la aplicación"""
@@ -272,6 +279,7 @@ class GimnasioApp:
         # Botones de sistema
         self.crear_botones_sistema()
     
+    
     def obtener_botones_por_rol(self):
         """Retorna los botones del menú según el rol del usuario"""
         rol = self.usuario_actual['rol']
@@ -282,15 +290,15 @@ class GimnasioApp:
                 ("🏃‍♂️ Gestión de Atletas", self.abrir_gestion_atletas),
                 ("💪 Gestión de Coaches", self.abrir_gestion_coaches),
                 ("💰 Gestión de Pagos", self.abrir_gestion_pagos),
+                ("💸 Gestión de Egresos", self.abrir_gestion_egresos),
                 ("📊 Reportes Financieros", self.abrir_reportes),
-                ("⚙️ Configuración", self.abrir_configuracion),
-                ("🔐 Gestión de Sesiones", self.abrir_sesiones)
+                # ("⚙️ Configuración", self.abrir_configuracion),
             ]
         elif rol == 'secretaria':
             return [
                 ("🏃‍♂️ Gestión de Atletas", self.abrir_gestion_atletas),
                 ("💪 Gestión de Coaches", self.abrir_gestion_coaches),
-                ("💰 Gestión de Pagos", self.abrir_gestion_pagos),
+                ("💰 Gestión de Pagos", self.abrir_gestion_pagos), 
                 ("📊 Reportes", self.abrir_reportes)
             ]
         elif rol == 'coach':
@@ -1029,9 +1037,7 @@ class GimnasioApp:
         v_scrollbar.pack(side='right', fill='y')
         h_scrollbar.pack(side='bottom', fill='x')
         
-        # Eventos
         self.atletas_tree.bind('<<TreeviewSelect>>', self.on_atleta_selected)
-        self.atletas_tree.bind('<Double-1>', self.editar_atleta)
 
     def cargar_atletas(self):
         """Carga los atletas desde la base de datos"""
@@ -1293,6 +1299,7 @@ class GimnasioApp:
 
 
 
+    
     def abrir_formulario_atleta(self, modo='registrar', atleta=None):
         """Abre el formulario modal para registrar/editar atleta con scrollbar"""
         # Crear ventana modal
@@ -1306,24 +1313,20 @@ class GimnasioApp:
         window_height = int(screen_height * 0.9)  
 
         self.atleta_form_window.geometry(f"{window_width}x{window_height}")
-        self.atleta_form_window.resizable(True, True)  # Permitir redimensionar
+        self.atleta_form_window.resizable(True, True)
         self.atleta_form_window.transient(self.root)
         self.atleta_form_window.grab_set()
         
-        # Centrar ventana
         self.atleta_form_window.geometry("+%d+%d" % (
             (screen_width - window_width) // 2,
             (screen_height - window_height) // 2
         ))
         
-        # ==================== CANVAS CON SCROLLBAR ====================
-        
-        # Crear canvas y scrollbar
+        # Canvas con Scrollbar
         main_canvas = tk.Canvas(self.atleta_form_window, highlightthickness=0)
         scrollbar = ttk.Scrollbar(self.atleta_form_window, orient="vertical", command=main_canvas.yview)
         scrollable_frame = ttk.Frame(main_canvas)
         
-        # Configurar el scroll
         scrollable_frame.bind(
             "<Configure>",
             lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all"))
@@ -1332,13 +1335,10 @@ class GimnasioApp:
         main_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         main_canvas.configure(yscrollcommand=scrollbar.set)
         
-        # ==================== CONTENIDO DEL FORMULARIO ====================
-        
-        # Frame principal del formulario (AHORA EN scrollable_frame)
+        # Contenido del Formulario
         main_frame = ttk.Frame(scrollable_frame, padding=20)
         main_frame.pack(fill='both', expand=True)
         
-        # Título
         title_label = ttk.Label(
             main_frame,
             text=f"{'➕ REGISTRAR' if modo == 'registrar' else '✏️ EDITAR'} ATLETA",
@@ -1346,41 +1346,49 @@ class GimnasioApp:
         )
         title_label.pack(pady=(0, 30))
         
-        # Variables del formulario
         self.atleta_form_vars = {
-            # Datos personales
-            'nombre': tk.StringVar(),
-            'apellido': tk.StringVar(),
-            'cedula': tk.StringVar(),
-            'edad': tk.StringVar(),
-            'telefono': tk.StringVar(),
-            'direccion': tk.StringVar(),
-            'email': tk.StringVar(),
-            
-            # Datos específicos de atleta
-            'peso': tk.StringVar(),
-            'fecha_nacimiento': tk.StringVar(),
-            'meta_largo_plazo': tk.StringVar(),
-            'valoracion_especiales': tk.StringVar(),
-            
-            # Plan y pago (solo para registro)
-            'id_plan': tk.StringVar(),
-            'metodo_pago': tk.StringVar(value='efectivo')
+            'nombre': tk.StringVar(), 'apellido': tk.StringVar(), 'cedula': tk.StringVar(),
+            'edad': tk.StringVar(), 'telefono': tk.StringVar(), 'direccion': tk.StringVar(),
+            'email': tk.StringVar(), 'peso': tk.StringVar(), 'fecha_nacimiento': tk.StringVar(),
+            'meta_largo_plazo': tk.StringVar(), 'valoracion_especiales': tk.StringVar(),
+            'id_plan': tk.StringVar(), 'metodo_pago': tk.StringVar(value='efectivo')
         }
         
-        # Si es edición, cargar datos existentes
-        if modo == 'editar' and atleta:
-            self.cargar_datos_atleta_form(atleta)
+        # ******** CORRECCIÓN DE ORDEN ********
         
-        # Crear secciones del formulario
         self.crear_seccion_datos_personales_atleta(main_frame)
         self.crear_seccion_datos_fisicos_atleta(main_frame)
         
         if modo == 'registrar':
             self.crear_seccion_plan_pago_atleta(main_frame)
-        
-        # Botones
+
         self.crear_botones_atleta_form(main_frame, modo)
+
+        if modo == 'editar' and atleta:
+            self.cargar_datos_atleta_form(atleta)
+        
+        # Empaquetar y configurar scroll
+        main_canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        def _on_mousewheel(event):
+            main_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def _bind_to_mousewheel(event):
+            main_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        def _unbind_from_mousewheel(event):
+            main_canvas.unbind_all("<MouseWheel>")
+        
+        main_canvas.bind('<Enter>', _bind_to_mousewheel)
+        main_canvas.bind('<Leave>', _unbind_from_mousewheel)
+        
+        def _configure_canvas_width(event):
+            canvas_width = event.width
+            main_canvas.itemconfig(main_canvas.find_all()[0], width=canvas_width)
+        
+        main_canvas.bind('<Configure>', _configure_canvas_width)
+
         
         # ==================== EMPAQUETAR CANVAS Y SCROLLBAR ====================
         
@@ -1440,6 +1448,41 @@ class GimnasioApp:
                 pass
         
         self.atleta_form_window.after(100, set_initial_focus)
+        
+    def cargar_datos_atleta_form(self, atleta_completo):
+        """Carga los datos de un atleta existente en las variables del formulario de edición."""
+        try:
+            atleta_data = atleta_completo['atleta_data']
+            usuario_data = atleta_completo['usuario_data']
+            
+            # Cargar datos personales
+            self.atleta_form_vars['nombre'].set(usuario_data[1])
+            self.atleta_form_vars['apellido'].set(usuario_data[2])
+            self.atleta_form_vars['cedula'].set(atleta_data[2] if len(atleta_data) > 2 else '')
+            self.atleta_form_vars['edad'].set(usuario_data[3] if len(usuario_data) > 3 and usuario_data[3] else '')
+            self.atleta_form_vars['telefono'].set(usuario_data[5] if len(usuario_data) > 5 and usuario_data[5] else '')
+            self.atleta_form_vars['email'].set(usuario_data[6] if len(usuario_data) > 6 else '')
+            
+            # Cargar datos en los widgets de texto (importante limpiar antes)
+            self.direccion_text_atleta.delete('1.0', tk.END)
+            self.direccion_text_atleta.insert('1.0', usuario_data[4] if len(usuario_data) > 4 and usuario_data[4] else '')
+            
+            # Cargar datos deportivos
+            self.atleta_form_vars['peso'].set(atleta_data[3] if len(atleta_data) > 3 and atleta_data[3] else '')
+            self.atleta_form_vars['fecha_nacimiento'].set(str(atleta_data[4]) if len(atleta_data) > 4 and atleta_data[4] else '')
+            
+            self.meta_text_atleta.delete('1.0', tk.END)
+            self.meta_text_atleta.insert('1.0', atleta_data[7] if len(atleta_data) > 7 and atleta_data[7] else '')
+            
+            self.valoracion_text_atleta.delete('1.0', tk.END)
+            self.valoracion_text_atleta.insert('1.0', atleta_data[8] if len(atleta_data) > 8 and atleta_data[8] else '')
+
+        except IndexError as ie:
+            messagebox.showerror("Error de Datos", f"No se pudieron cargar todos los datos del atleta. Estructura de datos incompleta. {ie}")
+        except Exception as e:
+            messagebox.showerror("Error Inesperado", f"Ocurrió un error al cargar el formulario: {e}")
+
+        
 
     def crear_botones_atleta_form(self, parent, modo):
         """Crea los botones del formulario de atleta"""
@@ -1685,34 +1728,429 @@ class GimnasioApp:
         """Abre la gestión de coaches"""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
-        self.mostrar_modulo_pendiente("💪 GESTIÓN DE COACHES", 
-                                     "Módulo para gestionar entrenadores y sus asignaciones.")
-    
+
+            
+        
     def abrir_gestion_pagos(self):
-        """Abre la gestión de pagos"""
+         """Abre la gestión de pagos"""
+        # Se agrega la verificación de permisos y se indenta la línea siguiente
+         if not self.verificar_permisos(['admin_principal', 'secretaria']):
+            return
+         self.mostrar_gestion_pagos()
+
+    def mostrar_gestion_pagos(self):
+        """Muestra el módulo completo de gestión de pagos/ingresos"""
+        self.limpiar_area_trabajo()
+        
+        self.pagos_data = []
+        self.pago_seleccionado = None
+        
+        # Título del módulo
+        title_frame = ttk.Frame(self.work_frame)
+        title_frame.pack(fill='x', pady=(0, 20))
+        
+        ttk.Label(
+            title_frame,
+            text="💰 GESTIÓN DE PAGOS",
+            font=('Segoe UI', 18, 'bold')
+        ).pack(side='left')
+        
+        ttk.Button(
+            title_frame,
+            text="🔄 Actualizar",
+            command=self.cargar_pagos
+        ).pack(side='right')
+        
+        # Frame de controles y filtros
+        controls_frame = ttk.Frame(self.work_frame)
+        controls_frame.pack(fill='x', pady=(0, 10))
+        
+        self.crear_filtros_pagos(controls_frame)
+        
+        # Tabla de pagos
+        self.crear_tabla_pagos()
+        
+        # Cargar datos iniciales
+        self.cargar_pagos()
+
+    
+    def crear_filtros_pagos(self, parent):
+        """Crea los filtros para la gestión de pagos"""
+        filter_frame = ttk.Frame(parent)
+        filter_frame.pack(fill='x')
+
+        # Búsqueda por texto
+        ttk.Label(filter_frame, text="🔍 Buscar (Atleta/Desc):").pack(side='left', padx=(0, 5))
+        self.search_pagos_var = tk.StringVar()
+        search_entry = ttk.Entry(filter_frame, textvariable=self.search_pagos_var, width=20)
+        search_entry.pack(side='left', padx=(0, 15))
+        self.search_pagos_var.trace('w', self.filtrar_pagos)
+
+        # Filtro por tipo de pago
+        ttk.Label(filter_frame, text="Tipo Pago:").pack(side='left', padx=(0, 5))
+        self.tipo_pago_filter_var = tk.StringVar(value="Todos")
+        tipo_pago_combo = ttk.Combobox(
+            filter_frame,
+            textvariable=self.tipo_pago_filter_var,
+            values=["Todos", "Inscripcion", "Renovacion", "Servicio Extra"],
+            state="readonly", width=15
+        )
+        tipo_pago_combo.pack(side='left', padx=(0, 15))
+        tipo_pago_combo.bind('<<ComboboxSelected>>', self.filtrar_pagos)
+
+        # Filtros de fecha
+        ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(10, 5))
+        self.fecha_desde_pagos = DateEntry(filter_frame, width=10, date_pattern='yyyy-mm-dd')
+        self.fecha_desde_pagos.set_date(datetime.now() - timedelta(days=30))
+        self.fecha_desde_pagos.pack(side='left', padx=(0, 10))
+
+        ttk.Label(filter_frame, text="Hasta:").pack(side='left', padx=(0, 5))
+        self.fecha_hasta_pagos = DateEntry(filter_frame, width=10, date_pattern='yyyy-mm-dd')
+        self.fecha_hasta_pagos.set_date(datetime.now())
+        self.fecha_hasta_pagos.pack(side='left', padx=(0, 10))
+
+        ttk.Button(filter_frame, text="🔍 Aplicar Fechas", command=self.filtrar_pagos).pack(side='left', padx=(0,20))
+
+        # Botones de Editar y Eliminar
+        self.edit_pago_btn = ttk.Button(filter_frame, text="✏️ Editar Pago", command=self._editar_pago_action, state='disabled')
+        self.edit_pago_btn.pack(side='left', padx=5)
+
+        self.delete_pago_btn = ttk.Button(filter_frame, text="🗑️ Eliminar Pago", command=self._eliminar_pago_action, state='disabled')
+        self.delete_pago_btn.pack(side='left', padx=5)
+
+    def crear_tabla_pagos(self):
+        """Crea la tabla (Treeview) para mostrar los pagos"""
+        table_frame = ttk.Frame(self.work_frame)
+        table_frame.pack(fill='both', expand=True, pady=10)
+        
+        columns = ('ID', 'Fecha', 'Atleta', 'Plan', 'Monto', 'Tipo', 'Método', 'Procesado Por', 'Descripción')
+        self.pagos_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
+        
+        col_widths = {'ID': 60, 'Fecha': 100, 'Atleta': 180, 'Plan': 120, 'Monto': 80, 
+                      'Tipo': 100, 'Método': 100, 'Procesado Por': 150, 'Descripción': 200}
+        
+        for col, width in col_widths.items():
+            self.pagos_tree.heading(col, text=col)
+            self.pagos_tree.column(col, width=width, anchor='w')
+        
+        self.pagos_tree.column('Monto', anchor='e')
+
+        v_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=self.pagos_tree.yview)
+        h_scroll = ttk.Scrollbar(table_frame, orient='horizontal', command=self.pagos_tree.xview)
+        self.pagos_tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+        
+        self.pagos_tree.pack(side='left', fill='both', expand=True)
+        v_scroll.pack(side='right', fill='y')
+        h_scroll.pack(side='bottom', fill='x')
+
+        self.pagos_tree.bind('<<TreeviewSelect>>', self.on_pago_selected)
+
+    def cargar_pagos(self):
+        """Carga todos los pagos usando el controlador y los muestra en la tabla"""
+        try:
+            resultado = self.finance_controller.obtener_ingresos_detallados()
+            if resultado['success']:
+                self.pagos_data = resultado['ingresos']
+                self.actualizar_tabla_pagos()
+                print(f"✅ Cargados {len(self.pagos_data)} registros de pago.")
+            else:
+                messagebox.showerror("Error", f"No se pudieron cargar los pagos: {resultado['message']}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error crítico al cargar pagos: {e}")
+
+    def actualizar_tabla_pagos(self, pagos_filtrados=None):
+        """Limpia y rellena la tabla de pagos con los datos proporcionados"""
+        for item in self.pagos_tree.get_children():
+            self.pagos_tree.delete(item)
+
+        pagos_a_mostrar = pagos_filtrados if pagos_filtrados is not None else self.pagos_data
+
+        for pago in pagos_a_mostrar:
+            monto_formateado = f"${pago['monto']:.2f}"
+            values = (
+                pago['id_pago'],
+                pago['fecha_pago'],
+                pago['nombre_atleta'],
+                pago['nombre_plan'],
+                monto_formateado,
+                pago['tipo_pago'],
+                pago['metodo_pago'],
+                pago['nombre_procesador'],
+                pago['descripcion']
+            )
+            self.pagos_tree.insert('', 'end', values=values)
+
+    def filtrar_pagos(self, *args):
+        """Filtra los pagos según los criterios de búsqueda y filtros"""
+        search_text = self.search_pagos_var.get().lower()
+        tipo_pago_filter = self.tipo_pago_filter_var.get()
+        fecha_desde = self.fecha_desde_pagos.get_date()
+        fecha_hasta = self.fecha_hasta_pagos.get_date()
+
+        pagos_filtrados = []
+        for pago in self.pagos_data:
+            # Filtro por fecha
+            if not (fecha_desde <= pago['fecha_pago'] <= fecha_hasta):
+                continue
+            
+            # Filtro por tipo de pago
+            if tipo_pago_filter != "Todos" and tipo_pago_filter.lower() not in pago['tipo_pago'].lower():
+                continue
+
+            # Filtro por texto de búsqueda
+            texto_busqueda = f"{pago['nombre_atleta']} {pago['descripcion']}".lower()
+            if search_text and search_text not in texto_busqueda:
+                continue
+
+            pagos_filtrados.append(pago)
+        
+        self.actualizar_tabla_pagos(pagos_filtrados)
+
+    def on_pago_selected(self, event):
+        """Maneja la selección de un pago en la tabla y activa/desactiva botones."""
+        selection = self.pagos_tree.selection()
+        if selection:
+            item = self.pagos_tree.item(selection[0])
+            pago_id = item['values'][0]
+            for pago in self.pagos_data:
+                if pago['id_pago'] == pago_id:
+                    self.pago_seleccionado = pago
+                    # Activar botones
+                    self.edit_pago_btn.config(state='normal')
+                    self.delete_pago_btn.config(state='normal')
+                    break
+        else:
+            self.pago_seleccionado = None
+            # Desactivar botones
+            self.edit_pago_btn.config(state='disabled')
+            self.delete_pago_btn.config(state='disabled')
+        
+    def _eliminar_pago_action(self):
+        """Función para el botón de eliminar pago."""
+        if not self.pago_seleccionado:
+            messagebox.showwarning("Acción Requerida", "Por favor, selecciona un pago de la lista para eliminar.")
+            return
+
+        pago_id = self.pago_seleccionado['id_pago']
+        atleta = self.pago_seleccionado['nombre_atleta']
+        monto = self.pago_seleccionado['monto']
+
+        confirmar = messagebox.askyesno(
+            "Confirmar Eliminación",
+            f"¿Estás seguro de que deseas eliminar el pago de ${monto:.2f} de {atleta} (ID: {pago_id})?\n\nEsta acción no se puede deshacer."
+        )
+
+        if confirmar:
+            try:
+                resultado = self.finance_controller.eliminar_ingreso(pago_id, self.usuario_actual['id'])
+                if resultado['success']:
+                    messagebox.showinfo("Éxito", resultado['message'])
+                    self.cargar_pagos() # Recargar la lista de pagos
+                else:
+                    messagebox.showerror("Error", resultado['message'])
+            except Exception as e:
+                messagebox.showerror("Error Crítico", f"Ocurrió un error: {e}")
+
+    def _editar_pago_action(self):
+        """Función para el botón de editar pago. Abre un formulario."""
+        if not self.pago_seleccionado:
+            messagebox.showwarning("Acción Requerida", "Por favor, selecciona un pago de la lista para editar.")
+            return
+
+        # Crear la ventana del formulario
+        self.pago_form_window = tk.Toplevel(self.root)
+        self.pago_form_window.title("✏️ Editar Registro de Pago")
+        self.pago_form_window.geometry("450x350")
+        self.pago_form_window.transient(self.root)
+        self.pago_form_window.grab_set()
+
+        frame = ttk.Frame(self.pago_form_window, padding=20)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text="Editar Pago", font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
+        
+        pago = self.pago_seleccionado
+        
+        # --- Campos del formulario ---
+        form_fields = ttk.Frame(frame)
+        form_fields.pack(fill='x')
+
+        # Monto
+        ttk.Label(form_fields, text="Monto:").grid(row=0, column=0, sticky='w', pady=5)
+        self.monto_var = tk.StringVar(value=f"{pago['monto']:.2f}")
+        ttk.Entry(form_fields, textvariable=self.monto_var, width=30).grid(row=0, column=1, sticky='ew', pady=5)
+
+        # Método de pago
+        ttk.Label(form_fields, text="Método de Pago:").grid(row=1, column=0, sticky='w', pady=5)
+        self.metodo_var = tk.StringVar(value=pago['metodo_pago'].lower())
+        ttk.Combobox(form_fields, textvariable=self.metodo_var, values=["efectivo", "tarjeta", "transferencia"], state='readonly').grid(row=1, column=1, sticky='ew', pady=5)
+        
+        # Descripción
+        ttk.Label(form_fields, text="Descripción:").grid(row=2, column=0, sticky='w', pady=5)
+        self.desc_var = tk.StringVar(value=pago['descripcion'])
+        ttk.Entry(form_fields, textvariable=self.desc_var).grid(row=2, column=1, sticky='ew', pady=5)
+
+        form_fields.grid_columnconfigure(1, weight=1)
+
+        # --- Botones ---
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill='x', pady=(30, 0))
+
+        ttk.Button(btn_frame, text="💾 Guardar Cambios", command=self._guardar_pago_editado_action).pack(side='right')
+        ttk.Button(btn_frame, text="❌ Cancelar", command=self.pago_form_window.destroy).pack(side='right', padx=10)
+
+    def _guardar_pago_editado_action(self):
+        """Recoge los datos del formulario de edición y los envía al controlador."""
+        try:
+            nuevo_monto = float(self.monto_var.get())
+            if nuevo_monto <= 0:
+                messagebox.showerror("Dato Inválido", "El monto debe ser un número positivo.")
+                return
+        except ValueError:
+            messagebox.showerror("Dato Inválido", "El monto debe ser un número válido.")
+            return
+
+        datos_actualizados = {
+            'monto': nuevo_monto,
+            'metodo_pago': self.metodo_var.get(),
+            'descripcion': self.desc_var.get()
+        }
+
+        pago_id = self.pago_seleccionado['id_pago']
+        resultado = self.finance_controller.actualizar_ingreso(pago_id, datos_actualizados, self.usuario_actual['id'])
+
+        if resultado['success']:
+            messagebox.showinfo("Éxito", resultado['message'])
+            self.pago_form_window.destroy()
+            self.cargar_pagos()
+        else:
+            messagebox.showerror("Error", resultado['message'])
+
+   
+    def abrir_reportes(self):
+        """Abre la vista de Reportes Financieros."""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
-        self.mostrar_modulo_pendiente("💰 GESTIÓN DE PAGOS", 
-                                     "Módulo para controlar pagos y estado financiero de atletas.")
-    
-    def abrir_reportes(self):
-        """Abre los reportes"""
-        self.mostrar_modulo_pendiente("📊 REPORTES FINANCIEROS", 
-                                     "Módulo para generar reportes del rendimiento financiero.")
-    
-    def abrir_configuracion(self):
-        """Abre la configuración"""
-        if not self.verificar_permisos(['admin_principal']):
+        self.mostrar_reportes_financieros()
+    # PEGA ESTOS DOS NUEVOS MÉTODOS EN TU CLASE GimnasioApp
+
+    def mostrar_reportes_financieros(self):
+        """Crea y muestra la interfaz para el módulo de Reportes Financieros."""
+        self.limpiar_area_trabajo()
+
+        # Título del módulo
+        ttk.Label(self.work_frame, text="📊 REPORTES FINANCIEROS", font=('Segoe UI', 18, 'bold')).pack(pady=(0, 20))
+
+        # --- Frame de Filtros ---
+        filter_frame = ttk.Frame(self.work_frame)
+        filter_frame.pack(fill='x', pady=5)
+
+        ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(0, 5))
+        self.reporte_fecha_desde = DateEntry(filter_frame, width=12, date_pattern='yyyy-mm-dd')
+        self.reporte_fecha_desde.set_date(datetime.now() - timedelta(days=30))
+        self.reporte_fecha_desde.pack(side='left', padx=(0, 20))
+
+        ttk.Label(filter_frame, text="Hasta:").pack(side='left', padx=(0, 5))
+        self.reporte_fecha_hasta = DateEntry(filter_frame, width=12, date_pattern='yyyy-mm-dd')
+        self.reporte_fecha_hasta.set_date(datetime.now())
+        self.reporte_fecha_hasta.pack(side='left', padx=(0, 20))
+
+        ttk.Button(filter_frame, text="📈 Generar Reporte", command=self._generar_y_mostrar_reporte_action).pack(side='left')
+
+        ttk.Separator(self.work_frame, orient='horizontal').pack(fill='x', pady=15)
+
+        # --- Frame de Resumen ---
+        resumen_frame = ttk.LabelFrame(self.work_frame, text="Resumen del Período", padding=15)
+        resumen_frame.pack(fill='x', pady=10)
+
+        # Usamos StringVars para actualizar fácilmente los textos
+        self.resumen_ingresos_var = tk.StringVar(value="Total Ingresos: $0.00")
+        self.resumen_egresos_var = tk.StringVar(value="Total Egresos: $0.00")
+        self.resumen_balance_var = tk.StringVar(value="Balance: $0.00")
+
+        ttk.Label(resumen_frame, textvariable=self.resumen_ingresos_var, font=('Segoe UI', 12, 'bold'), foreground=self.colores['success']).pack(side='left', padx=20)
+        ttk.Label(resumen_frame, textvariable=self.resumen_egresos_var, font=('Segoe UI', 12, 'bold'), foreground=self.colores['error']).pack(side='left', padx=20)
+        ttk.Label(resumen_frame, textvariable=self.resumen_balance_var, font=('Segoe UI', 14, 'bold'), foreground=self.colores['primario']).pack(side='right', padx=20)
+
+        # --- Frame de Detalles ---
+        details_frame = ttk.Frame(self.work_frame)
+        details_frame.pack(fill='both', expand=True, pady=10)
+        details_frame.grid_columnconfigure(0, weight=1)
+        details_frame.grid_columnconfigure(1, weight=1) # Dos columnas de igual tamaño
+
+        # Tabla de Desglose de Ingresos
+        ingresos_frame = ttk.LabelFrame(details_frame, text="Desglose de Ingresos", padding=10)
+        ingresos_frame.grid(row=0, column=0, sticky='nsew', padx=(0, 5))
+        
+        self.reporte_ingresos_tree = ttk.Treeview(ingresos_frame, columns=('Tipo', 'Monto'), show='headings')
+        self.reporte_ingresos_tree.heading('Tipo', text='Tipo de Ingreso')
+        self.reporte_ingresos_tree.heading('Monto', text='Monto Total')
+        self.reporte_ingresos_tree.column('Monto', anchor='e')
+        self.reporte_ingresos_tree.pack(fill='both', expand=True)
+
+        # Tabla de Desglose de Egresos
+        egresos_frame = ttk.LabelFrame(details_frame, text="Desglose de Egresos", padding=10)
+        egresos_frame.grid(row=0, column=1, sticky='nsew', padx=(5, 0))
+
+        self.reporte_egresos_tree = ttk.Treeview(egresos_frame, columns=('Tipo', 'Monto'), show='headings')
+        self.reporte_egresos_tree.heading('Tipo', text='Tipo de Egreso')
+        self.reporte_egresos_tree.heading('Monto', text='Monto Total')
+        self.reporte_egresos_tree.column('Monto', anchor='e')
+        self.reporte_egresos_tree.pack(fill='both', expand=True)
+
+        # Generar reporte inicial para el último mes
+        self._generar_y_mostrar_reporte_action()
+
+    def _generar_y_mostrar_reporte_action(self):
+        """Función interna que llama al controlador y actualiza la UI del reporte."""
+        fecha_inicio = self.reporte_fecha_desde.get_date()
+        fecha_fin = self.reporte_fecha_hasta.get_date()
+
+        if fecha_inicio > fecha_fin:
+            messagebox.showerror("Error de Fechas", "La fecha 'Desde' no puede ser posterior a la fecha 'Hasta'.")
             return
-        self.mostrar_modulo_pendiente("⚙️ CONFIGURACIÓN", 
-                                     "Módulo para configurar parámetros del sistema.")
+
+        try:
+            resultado = self.finance_controller.generar_reporte_financiero(fecha_inicio, fecha_fin)
+
+            if not resultado['success']:
+                messagebox.showerror("Error al generar reporte", resultado['message'])
+                return
+
+            reporte = resultado['reporte']
+            resumen = reporte['resumen']
+            desglose_ingresos = reporte['desglose_ingresos']
+            desglose_egresos = reporte['desglose_egresos']
+
+            self.resumen_ingresos_var.set(f"Total Ingresos: ${resumen['total_ingresos']:.2f}")
+            self.resumen_egresos_var.set(f"Total Egresos: ${resumen['total_egresos']:.2f}")
+            balance_color = self.colores['success'] if resumen['balance'] >= 0 else self.colores['error']
+            self.resumen_balance_var.set(f"Balance: ${resumen['balance']:.2f}")
+
+            self.reporte_ingresos_tree.delete(*self.reporte_ingresos_tree.get_children())
+            for tipo, monto in desglose_ingresos.items():
+                tipo_legible = tipo.replace('_', ' ').title()
+                self.reporte_ingresos_tree.insert('', 'end', values=(tipo_legible, f"${monto:.2f}"))
+
+            # Actualizar Tabla de Egresos
+            self.reporte_egresos_tree.delete(*self.reporte_egresos_tree.get_children())
+            for tipo, monto in desglose_egresos.items():
+                tipo_legible = tipo.replace('_', ' ').title()
+                self.reporte_egresos_tree.insert('', 'end', values=(tipo_legible, f"${monto:.2f}"))
+
+        except Exception as e:
+            messagebox.showerror("Error Crítico", f"Ocurrió un error al procesar el reporte: {e}")
+            import traceback
+            traceback.print_exc()
+        
     
-    def abrir_sesiones(self):
-        """Abre gestión de sesiones"""
-        if not self.verificar_permisos(['admin_principal']):
-            return
-        self.mostrar_modulo_pendiente("🔐 GESTIÓN DE SESIONES", 
-                                     "Módulo para administrar sesiones activas del sistema.")
+    # def abrir_configuracion(self):
+    #     """Abre la configuración"""
+    #     if not self.verificar_permisos(['admin_principal']):
+    #         return
+    #     self.mostrar_modulo_pendiente("⚙️ CONFIGURACIÓN", 
+    #                                  "Módulo para configurar parámetros del sistema.")
+    
     
     # Métodos específicos para otros roles
     def abrir_mis_atletas(self):
@@ -1836,6 +2274,175 @@ class GimnasioApp:
     def crear_dashboard_default(self):
         """Dashboard por defecto"""
         self.crear_dashboard_admin()
+        
+    def abrir_gestion_egresos(self):
+        """Abre la vista de Gestión de Egresos."""
+        if not self.verificar_permisos(['admin_principal', 'secretaria']):
+            return
+        self.mostrar_gestion_egresos()
+
+    def mostrar_gestion_egresos(self):
+        """Crea y muestra la interfaz para el módulo de Gestión de Egresos."""
+        self.limpiar_area_trabajo()
+        self.egresos_data = []
+
+        # Título
+        title_frame = ttk.Frame(self.work_frame)
+        title_frame.pack(fill='x', pady=(0, 20))
+        ttk.Label(title_frame, text="💸 GESTIÓN DE EGRESOS", font=('Segoe UI', 18, 'bold')).pack(side='left')
+        
+        # Frame de Controles
+        controls_frame = ttk.Frame(self.work_frame)
+        controls_frame.pack(fill='x', pady=(0, 10))
+        
+        ttk.Button(controls_frame, text="🔄 Actualizar", command=self.cargar_egresos).pack(side='right', padx=5)
+        ttk.Button(controls_frame, text="➕ Registrar Egreso", command=self._registrar_nuevo_egreso_action).pack(side='right', padx=5)
+        
+        # Tabla de Egresos
+        self.crear_tabla_egresos()
+        
+        # Cargar datos iniciales
+        self.cargar_egresos()
+
+    def crear_tabla_egresos(self):
+        """Crea la tabla (Treeview) para mostrar los egresos."""
+        table_frame = ttk.Frame(self.work_frame)
+        table_frame.pack(fill='both', expand=True, pady=10)
+        
+        columns = ('ID', 'Fecha', 'Tipo', 'Monto', 'Descripción', 'Beneficiario', 'Método', 'Registrado Por')
+        self.egresos_tree = ttk.Treeview(table_frame, columns=columns, show='headings')
+        
+        col_widths = {'ID': 50, 'Fecha': 100, 'Tipo': 120, 'Monto': 90, 'Descripción': 250, 'Beneficiario': 150, 'Método': 100, 'Registrado Por': 120}
+        
+        for col, width in col_widths.items():
+            self.egresos_tree.heading(col, text=col)
+            self.egresos_tree.column(col, width=width, anchor='w')
+        self.egresos_tree.column('Monto', anchor='e')
+
+        v_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=self.egresos_tree.yview)
+        h_scroll = ttk.Scrollbar(table_frame, orient='horizontal', command=self.egresos_tree.xview)
+        self.egresos_tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+        
+        self.egresos_tree.pack(side='left', fill='both', expand=True)
+        v_scroll.pack(side='right', fill='y')
+        h_scroll.pack(side='bottom', fill='x')
+
+    def cargar_egresos(self):
+        """Carga los datos de egresos desde el controlador y actualiza la tabla."""
+        try:
+            resultado = self.finance_controller.obtener_todos_los_egresos()
+            if resultado['success']:
+                self.egresos_data = resultado['egresos']
+                self.actualizar_tabla_egresos()
+            else:
+                messagebox.showerror("Error", f"No se pudieron cargar los egresos: {resultado['message']}")
+        except Exception as e:
+            messagebox.showerror("Error Crítico", f"Error al cargar egresos: {e}")
+
+    def actualizar_tabla_egresos(self):
+        """Limpia y rellena la tabla de egresos con los datos actuales."""
+        self.egresos_tree.delete(*self.egresos_tree.get_children())
+        for egreso in self.egresos_data:
+            monto_formateado = f"${egreso[1]:.2f}"
+            tipo_legible = egreso[2].replace('_', ' ').title()
+            
+            # Obtener nombre del registrador (asumiendo que tienes una forma de mapear ID a nombre)
+            registrado_por_id = egreso[7]
+            # Aquí podrías llamar a un método para obtener el nombre del usuario por ID
+            registrado_por_nombre = f"Usuario ID: {registrado_por_id}" 
+
+            values = (
+                egreso[0], # ID
+                egreso[6], # Fecha
+                tipo_legible, # Tipo
+                monto_formateado, # Monto
+                egreso[3], # Descripción
+                egreso[4], # Beneficiario
+                egreso[5], # Método
+                registrado_por_nombre
+            )
+            self.egresos_tree.insert('', 'end', values=values)
+            
+    def _registrar_nuevo_egreso_action(self):
+        """Abre el formulario para registrar un nuevo egreso."""
+        self.egreso_form_window = tk.Toplevel(self.root)
+        self.egreso_form_window.title("➕ Registrar Nuevo Egreso")
+        self.egreso_form_window.geometry("500x450")
+        self.egreso_form_window.transient(self.root)
+        self.egreso_form_window.grab_set()
+
+        frame = ttk.Frame(self.egreso_form_window, padding=20)
+        frame.pack(fill='both', expand=True)
+
+        ttk.Label(frame, text="Registrar Nuevo Egreso", font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
+        
+        form_fields = ttk.Frame(frame)
+        form_fields.pack(fill='x')
+        
+        # Variables del formulario
+        self.egreso_vars = {
+            'monto': tk.StringVar(),
+            'tipo_egreso': tk.StringVar(),
+            'descripcion': tk.StringVar(),
+            'beneficiario': tk.StringVar(),
+            'metodo_pago': tk.StringVar(value="transferencia")
+        }
+
+        # Campos
+        ttk.Label(form_fields, text="Monto *:").grid(row=0, column=0, sticky='w', pady=5)
+        ttk.Entry(form_fields, textvariable=self.egreso_vars['monto']).grid(row=0, column=1, sticky='ew', pady=5)
+
+        ttk.Label(form_fields, text="Tipo de Egreso *:").grid(row=1, column=0, sticky='w', pady=5)
+        tipos_egreso = ['salario_empleado', 'compra_equipos', 'mantenimiento', 'servicios', 'alquiler', 'otro']
+        ttk.Combobox(form_fields, textvariable=self.egreso_vars['tipo_egreso'], values=tipos_egreso, state='readonly').grid(row=1, column=1, sticky='ew', pady=5)
+
+        ttk.Label(form_fields, text="Método de Pago *:").grid(row=2, column=0, sticky='w', pady=5)
+        ttk.Combobox(form_fields, textvariable=self.egreso_vars['metodo_pago'], values=["efectivo", "tarjeta", "transferencia"], state='readonly').grid(row=2, column=1, sticky='ew', pady=5)
+
+        ttk.Label(form_fields, text="Beneficiario:").grid(row=3, column=0, sticky='w', pady=5)
+        ttk.Entry(form_fields, textvariable=self.egreso_vars['beneficiario']).grid(row=3, column=1, sticky='ew', pady=5)
+
+        ttk.Label(form_fields, text="Descripción *:").grid(row=4, column=0, sticky='nw', pady=5)
+        self.egreso_desc_text = tk.Text(form_fields, height=4)
+        self.egreso_desc_text.grid(row=4, column=1, sticky='ew', pady=5)
+        
+        form_fields.grid_columnconfigure(1, weight=1)
+
+        # Botones
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill='x', pady=(20, 0))
+        ttk.Button(btn_frame, text="💾 Guardar Egreso", command=self._guardar_nuevo_egreso_action).pack(side='right')
+        ttk.Button(btn_frame, text="❌ Cancelar", command=self.egreso_form_window.destroy).pack(side='right', padx=10)
+
+    def _guardar_nuevo_egreso_action(self):
+        """Recoge los datos del formulario de egreso y los envía al controlador."""
+        datos_egreso = {
+            'monto': self.egreso_vars['monto'].get(),
+            'tipo_egreso': self.egreso_vars['tipo_egreso'].get(),
+            'descripcion': self.egreso_desc_text.get('1.0', 'end-1c').strip(),
+            'beneficiario': self.egreso_vars['beneficiario'].get(),
+            'metodo_pago': self.egreso_vars['metodo_pago'].get()
+        }
+
+        # Validación simple
+        if not datos_egreso['monto'] or not datos_egreso['tipo_egreso'] or not datos_egreso['descripcion']:
+            messagebox.showerror("Campos Requeridos", "Monto, Tipo de Egreso y Descripción son obligatorios.")
+            return
+        
+        try:
+            float(datos_egreso['monto'])
+        except ValueError:
+            messagebox.showerror("Dato Inválido", "El monto debe ser un número.")
+            return
+
+        resultado = self.finance_controller.registrar_egreso(datos_egreso, self.usuario_actual['id'])
+
+        if resultado['success']:
+            messagebox.showinfo("Éxito", resultado['message'])
+            self.egreso_form_window.destroy()
+            self.cargar_egresos() # Recargar la tabla
+        else:
+            messagebox.showerror("Error", resultado['message'])
     
     def run(self):
         """Ejecuta la aplicación"""

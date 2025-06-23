@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 import threading
 import time
+import os
 
 
 class LoginView:
@@ -180,6 +181,7 @@ class LoginView:
         
       
         logo_image = Image.open('assets/logo_athena.png')
+
         
         # Redimensionar manteniendo proporción
         logo_image = logo_image.resize((280, 200), Image.Resampling.LANCZOS)

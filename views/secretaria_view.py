@@ -933,35 +933,79 @@ class SecretariaView:
     def cargar_pagos(self):
         """Carga la lista de pagos/ingresos"""
         try:
-            self.actualizar_status("🔄 Cargando pagos...")
+            self.actualizar_status("🔄 Cargando historial de pagos...")
             
             # Limpiar lista actual
             for item in self.pagos_tree.get_children():
                 self.pagos_tree.delete(item)
             
-            # TODO: Implementar carga de pagos desde finance_controller
-            # Por ahora datos simulados
+            # Obtener ingresos detallados del controlador
+            resultado = self.finance_controller.obtener_ingresos_detallados()
             
-            self.actualizar_status("✅ Pagos cargados")
+            if resultado['success']:
+                self.datos_cache['pagos'] = resultado['ingresos']
+                for pago in resultado['ingresos']:
+                    monto_formateado = f"${pago['monto']:.2f}"
+                    values = (
+                        pago['id_pago'],
+                        pago['fecha_pago'],
+                        pago['nombre_atleta'],
+                        pago['nombre_plan'],
+                        monto_formateado,
+                        pago['tipo_pago'],
+                        pago['metodo_pago'],
+                        pago['nombre_procesador']
+                    )
+                    self.pagos_tree.insert('', 'end', values=values)
+                
+                self.actualizar_status(f"✅ {len(resultado['ingresos'])} pagos cargados.")
+            else:
+                self.actualizar_status(f"❌ Error al cargar pagos: {resultado['message']}")
+                messagebox.showerror("Error", resultado['message'])
             
         except Exception as e:
-            self.actualizar_status(f"❌ Error cargando pagos: {str(e)}")
-    
+            self.actualizar_status(f"❌ Error crítico cargando pagos: {str(e)}")
+
     def cargar_gastos(self):
-        """Carga la lista de gastos/egresos"""
+# ... (resto del código de secretaria_view.py) ...
+
+     def filtrar_pagos(self):
+        """Filtra pagos por rango de fechas"""
         try:
-            self.actualizar_status("🔄 Cargando gastos...")
-            
-            # Limpiar lista actual
-            for item in self.gastos_tree.get_children():
-                self.gastos_tree.delete(item)
-            
-            # TODO: Implementar carga de gastos desde finance_controller
-            
-            self.actualizar_status("✅ Gastos cargados")
-            
+            fecha_desde = self.fecha_desde.get_date()
+            fecha_hasta = self.fecha_hasta.get_date()
+            self.actualizar_status(f"🔍 Filtrando pagos desde {fecha_desde} hasta {fecha_hasta}...")
+
+            resultado = self.finance_controller.obtener_ingresos_por_fecha(fecha_desde, fecha_hasta)
+
+            if resultado['success']:
+                # Limpiar la tabla
+                for item in self.pagos_tree.get_children():
+                    self.pagos_tree.delete(item)
+                
+                # Llenar la tabla con los resultados filtrados
+                for pago in resultado['ingresos']:
+                    monto_formateado = f"${pago['monto']:.2f}"
+                    values = (
+                        pago['id_pago'],
+                        pago['fecha_pago'],
+                        pago['nombre_atleta'],
+                        pago['nombre_plan'],
+                        monto_formateado,
+                        pago['tipo_pago'],
+                        pago['metodo_pago'],
+                        pago['nombre_procesador']
+                    )
+                    self.pagos_tree.insert('', 'end', values=values)
+                
+                self.actualizar_status(f"✅ {len(resultado['ingresos'])} pagos encontrados en el período.")
+            else:
+                messagebox.showerror("Error", f"Error al filtrar pagos: {resultado['message']}")
+                self.actualizar_status(f"❌ Error al filtrar pagos.")
+
         except Exception as e:
-            self.actualizar_status(f"❌ Error cargando gastos: {str(e)}")
+            messagebox.showerror("Error", f"Error al procesar el filtro de fechas: {str(e)}")
+            self.actualizar_status(f"❌ Error en filtro.")
     
     # ==================== EVENTOS Y CALLBACKS ====================
     
