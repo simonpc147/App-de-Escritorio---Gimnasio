@@ -1,15 +1,12 @@
-# main.py - Aplicación Real del Gimnasio Athenas
 import tkinter as tk
 import tkinter.simpledialog
 from tkinter import ttk, messagebox
-# Asegúrate de importar DateEntry si aún no está
+
 from tkcalendar import DateEntry
 import sys
 import os
 from datetime import datetime, timedelta
 
-# Importar controladores y vistas
-# (Asegúrate de que FinanceController esté importado si vas a usarlo directamente)
 from controllers.auth_controller import AuthController
 from controllers.user_controller import UserController
 from controllers.atleta_controller import AtletaController
@@ -24,7 +21,7 @@ class GimnasioApp:
         self.root = tk.Tk()
         self.root.title("🏋️ Gimnasio Athenas - Sistema de Gestión")
         self.root.geometry("1200x800")
-        self.root.state('zoomed')  # Maximizado en Windows
+        self.root.state('zoomed')  
         
         # Controladores
         self.auth_controller = AuthController()
@@ -34,14 +31,11 @@ class GimnasioApp:
         self.coach_controller = CoachController()
         self.db = Database()
         
-        # Variables de sesión
         self.usuario_actual = None
         self.token_sesion = None
         
-        # Configurar estilos
         self.configurar_estilos()
         
-        # Verificar conexión a BD e inicializar
         self.inicializar_aplicacion()
         
     
@@ -2691,56 +2685,8 @@ class GimnasioApp:
         self._mostrar_loading_reporte()
         
         # Usar after para no bloquear UI
-        self.root.after(50, lambda: self._ejecutar_reporte_async(fecha_inicio, fecha_fin))
+        self.root.after(50, lambda: self._ejecutar_reporte_async(fecha_inicio, fecha_fin))   
 
-    def _ejecutar_reporte_async(self, fecha_inicio, fecha_fin):
-        """Ejecuta el reporte de forma asíncrona"""
-        try:
-            resultado = self.finance_controller.generar_reporte_financiero(fecha_inicio, fecha_fin)
-
-            if not resultado['success']:
-                messagebox.showerror("Error al generar reporte", resultado['message'])
-                return
-
-            reporte = resultado['reporte']
-            resumen = reporte['resumen']
-            desglose_ingresos = reporte['desglose_ingresos']
-            desglose_egresos = reporte['desglose_egresos']
-
-            # Actualizar resumen
-            self.resumen_ingresos_label.config(text=f"Total Ingresos: ${resumen['total_ingresos']:.2f}")
-            self.resumen_egresos_label.config(text=f"Total Egresos: ${resumen['total_egresos']:.2f}")
-            
-            balance_color = 'green' if resumen['balance'] >= 0 else 'red'
-            self.resumen_balance_label.config(text=f"Balance: ${resumen['balance']:.2f}", 
-                                            foreground=balance_color)
-
-            # Limpiar y actualizar tabla
-            self.reporte_detalles_tree.delete(*self.reporte_detalles_tree.get_children())
-            
-            # Agregar ingresos
-            for tipo, monto in desglose_ingresos.items():
-                tipo_legible = tipo.replace('_', ' ').title()
-                self.reporte_detalles_tree.insert('', 'end', values=("📈 INGRESO", tipo_legible, f"${monto:.2f}"))
-            
-            # Agregar egresos
-            for tipo, monto in desglose_egresos.items():
-                tipo_legible = tipo.replace('_', ' ').title()
-                self.reporte_detalles_tree.insert('', 'end', values=("📉 EGRESO", tipo_legible, f"${monto:.2f}"))
-
-        except Exception as e:
-            messagebox.showerror("Error Crítico", f"Ocurrió un error al procesar el reporte: {e}")
-            import traceback
-            traceback.print_exc()
-
-    # def abrir_configuracion(self):
-    #     """Abre la configuración"""
-    #     if not self.verificar_permisos(['admin_principal']):
-    #         return
-    #     self.mostrar_modulo_pendiente("⚙️ CONFIGURACIÓN", 
-    #                                  "Módulo para configurar parámetros del sistema.")
-    
-    
      # ==================== OTRA GESTION ====================       
 
     def abrir_mis_atletas(self):
