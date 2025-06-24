@@ -1,4 +1,3 @@
-# Controlador para gestión financiera completa (planes, ingresos, egresos)
 from models.plan_model import PlanModel
 from models.ingreso_model import IngresoModel
 from models.egreso_model import EgresoModel
@@ -358,7 +357,6 @@ class FinanceController:
         except Exception as e:
             return {"success": False, "message": f"Error interno: {str(e)}"}
 
-    # --- MÉTODO NUEVO Y CORREGIDO ---
     def obtener_todos_los_egresos(self):
         """Obtiene todos los registros de egresos de la base de datos."""
         try:

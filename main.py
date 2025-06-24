@@ -8,6 +8,7 @@ import os
 from datetime import datetime, timedelta
 
 from controllers.auth_controller import AuthController
+from controllers.rutina_controller import RutinaController
 from controllers.user_controller import UserController
 from controllers.atleta_controller import AtletaController
 from controllers.finance_controller import FinanceController 
@@ -29,6 +30,7 @@ class GimnasioApp:
         self.atleta_controller = AtletaController()
         self.finance_controller = FinanceController() 
         self.coach_controller = CoachController()
+        self.rutina_controller = RutinaController()
         self.db = Database()
         
         self.usuario_actual = None
@@ -276,6 +278,8 @@ class GimnasioApp:
         self.crear_botones_sistema()
     
     
+    # ==================== MÉTODO MENU LATERAL ====================
+
     def obtener_botones_por_rol(self):
         """Retorna los botones del menú según el rol del usuario"""
         rol = self.usuario_actual['rol']
@@ -288,7 +292,7 @@ class GimnasioApp:
                 ("💰 Gestión de Pagos", self.abrir_gestion_pagos),
                 ("💸 Gestión de Egresos", self.abrir_gestion_egresos),
                 ("📊 Reportes Financieros", self.abrir_reportes),
-                # ("⚙️ Configuración", self.abrir_configuracion),
+                ("🏃‍♂️ Gestión de Rutinas", self.abrir_gestion_rutinas),
             ]
         elif rol == 'secretaria':
             return [
@@ -300,14 +304,7 @@ class GimnasioApp:
         elif rol == 'coach':
             return [
                 ("👥 Mis Atletas", self.abrir_mis_atletas),
-                ("📋 Asignaciones", self.abrir_asignaciones),
-                ("📊 Mi Dashboard", self.abrir_coach_dashboard)
-            ]
-        elif rol == 'atleta':
-            return [
-                ("👤 Mi Perfil", self.abrir_mi_perfil),
-                ("💰 Mis Pagos", self.abrir_mis_pagos),
-                ("💪 Mi Coach", self.abrir_mi_coach)
+                ("🏃‍♂️ Gestión de Rutinas", self.abrir_gestion_rutinas)
             ]
         else:
             return [("📊 Dashboard", self.mostrar_dashboard_resumen)]
@@ -2232,8 +2229,7 @@ class GimnasioApp:
         
         # Cargar datos iniciales
         self.cargar_pagos()
-    
-    
+        
     def crear_filtros_pagos(self, parent):
         """Crea los filtros para la gestión de pagos - VERSIÓN OPTIMIZADA"""
         filter_frame = ttk.Frame(parent)
@@ -2288,7 +2284,6 @@ class GimnasioApp:
 
         self.delete_pago_btn = ttk.Button(filter_frame, text="🗑️ Eliminar Pago", command=self._eliminar_pago_action, state='disabled')
         self.delete_pago_btn.pack(side='left', padx=5)
-
    
     def cargar_pagos(self):
         """Carga todos los pagos usando el controlador - VERSIÓN OPTIMIZADA"""
@@ -2328,7 +2323,6 @@ class GimnasioApp:
         h_scroll.pack(side='bottom', fill='x')
 
         self.pagos_tree.bind('<<TreeviewSelect>>', self.on_pago_selected)
-
 
     def _mostrar_loading_reporte(self):
         """Muestra loading en el reporte"""
@@ -2392,7 +2386,6 @@ class GimnasioApp:
                 pago['descripcion']
             )
             self.pagos_tree.insert('', 'end', values=values)
-
    
     def filtrar_pagos(self, *args):
         """Filtra los pagos según los criterios de búsqueda y filtros - VERSIÓN OPTIMIZADA"""
@@ -2448,8 +2441,6 @@ class GimnasioApp:
             pagos_filtrados.append(pago)
         
         self.actualizar_tabla_pagos(pagos_filtrados)
-
-
 
     def on_pago_selected(self, event):
         """Maneja la selección de un pago en la tabla y activa/desactiva botones."""
@@ -2571,7 +2562,6 @@ class GimnasioApp:
         else:
             messagebox.showerror("Error", resultado['message'])
 
-   
     def abrir_reportes(self):
         """Abre la vista de Reportes Financieros."""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
@@ -2661,7 +2651,6 @@ class GimnasioApp:
         # Generar reporte inicial
         self._generar_y_mostrar_reporte_action()
     
-
     def _generar_y_mostrar_reporte_action(self):
         """Función que llama al controlador y actualiza la UI del reporte - VERSIÓN OPTIMIZADA"""
         
@@ -2758,6 +2747,854 @@ class GimnasioApp:
         )
         back_btn.pack(pady=20)
     
+    # ==================== GESTION DE RUTINAS ====================
+
+    def abrir_gestion_rutinas(self):
+        """Abre la gestión de rutinas"""
+        if not self.verificar_permisos(['admin_principal', 'coach']):
+            return
+        self.mostrar_gestion_rutinas()
+
+    def mostrar_gestion_rutinas(self):
+        """Muestra el módulo completo de gestión de rutinas"""
+        self.limpiar_area_trabajo()
+        
+        # Variables para el módulo
+        self.rutinas_data = []
+        self.rutina_seleccionada = None
+        
+        # Título del módulo
+        title_frame = ttk.Frame(self.work_frame)
+        title_frame.pack(fill='x', pady=(0, 20))
+        
+        title_label = ttk.Label(
+            title_frame,
+            text="🏃‍♂️ GESTIÓN DE RUTINAS",
+            font=('Segoe UI', 18, 'bold')
+        )
+        title_label.pack(side='left')
+        
+        # Botón de actualizar
+        refresh_btn = ttk.Button(
+            title_frame,
+            text="🔄 Actualizar",
+            command=self.cargar_rutinas
+        )
+        refresh_btn.pack(side='right')
+        
+        # Frame de controles
+        controls_frame = ttk.Frame(self.work_frame)
+        controls_frame.pack(fill='x', pady=(0, 10))
+        
+        # Búsqueda y filtros
+        self.crear_filtros_rutinas(controls_frame)
+        
+        # Botones de acción
+        self.crear_botones_rutinas(controls_frame)
+        
+        # Tabla de rutinas
+        self.crear_tabla_rutinas()
+        
+        # Cargar datos iniciales
+        self.cargar_rutinas()
+
+    def crear_filtros_rutinas(self, parent):
+        """Crea los filtros de búsqueda para rutinas"""
+        search_frame = ttk.Frame(parent)
+        search_frame.pack(side='left', fill='x', expand=True)
+        
+        # Búsqueda por texto
+        ttk.Label(search_frame, text="🔍 Buscar:").pack(side='left', padx=(0, 5))
+        
+        self.search_rutinas_var = tk.StringVar()
+        self.search_rutinas_entry = ttk.Entry(search_frame, textvariable=self.search_rutinas_var, width=25)
+        self.search_rutinas_entry.pack(side='left', padx=(0, 10))
+        self.search_rutinas_var.trace('w', self.filtrar_rutinas)
+        
+        # Filtro por nivel
+        ttk.Label(search_frame, text="📊 Nivel:").pack(side='left', padx=(10, 5))
+        
+        self.nivel_filter_var = tk.StringVar(value="Todos")
+        nivel_combo = ttk.Combobox(
+            search_frame, 
+            textvariable=self.nivel_filter_var,
+            values=["Todos", "Principiante", "Intermedio", "Avanzado"],
+            state="readonly",
+            width=12
+        )
+        nivel_combo.pack(side='left')
+        nivel_combo.bind('<<ComboboxSelected>>', self.filtrar_rutinas)
+
+    def crear_botones_rutinas(self, parent):
+        """Crea los botones de acción para rutinas"""
+        buttons_frame = ttk.Frame(parent)
+        buttons_frame.pack(side='right')
+        
+        # Botón crear rutina
+        self.create_rutina_btn = ttk.Button(
+            buttons_frame,
+            text="➕ Crear Rutina",
+            command=self.crear_rutina
+        )
+        self.create_rutina_btn.pack(side='left', padx=2)
+        
+        # Botón ver rutina completa
+        self.view_rutina_btn = ttk.Button(
+            buttons_frame,
+            text="👁️ Ver Rutina",
+            command=self.ver_rutina_completa,
+            state='disabled'
+        )
+        self.view_rutina_btn.pack(side='left', padx=2)
+        
+        # Botón editar rutina
+        self.edit_rutina_btn = ttk.Button(
+            buttons_frame,
+            text="✏️ Editar",
+            command=self.editar_rutina,
+            state='disabled'
+        )
+        self.edit_rutina_btn.pack(side='left', padx=2)
+
+        self.delete_rutina_btn = ttk.Button(
+            buttons_frame,
+            text="🗑️ Eliminar",
+            command=self.eliminar_rutina,
+            state='disabled'
+        )
+        self.delete_rutina_btn.pack(side='left', padx=2)
+
+    def crear_tabla_rutinas(self):
+        """Crea la tabla de rutinas con Treeview"""
+        table_frame = ttk.Frame(self.work_frame)
+        table_frame.pack(fill='both', expand=True, pady=10)
+        
+        # Configurar Treeview
+        columns = ('ID', 'Nombre', 'Nivel', 'Ejercicios', 'Creado Por', 'Fecha Creación')
+        self.rutinas_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
+        
+        # Configurar encabezados
+        self.rutinas_tree.heading('ID', text='ID')
+        self.rutinas_tree.heading('Nombre', text='Nombre Rutina')
+        self.rutinas_tree.heading('Nivel', text='Nivel')
+        self.rutinas_tree.heading('Ejercicios', text='# Ejercicios')
+        self.rutinas_tree.heading('Creado Por', text='Creado Por')
+        self.rutinas_tree.heading('Fecha Creación', text='Fecha Creación')
+        
+        # Configurar anchos
+        self.rutinas_tree.column('ID', width=50, anchor='center')
+        self.rutinas_tree.column('Nombre', width=200)
+        self.rutinas_tree.column('Nivel', width=100, anchor='center')
+        self.rutinas_tree.column('Ejercicios', width=100, anchor='center')
+        self.rutinas_tree.column('Creado Por', width=150)
+        self.rutinas_tree.column('Fecha Creación', width=120, anchor='center')
+        
+        # Scrollbars
+        v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.rutinas_tree.yview)
+        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.rutinas_tree.xview)
+        self.rutinas_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        
+        # Empaquetar
+        self.rutinas_tree.pack(side='left', fill='both', expand=True)
+        v_scrollbar.pack(side='right', fill='y')
+        h_scrollbar.pack(side='bottom', fill='x')
+        
+        self.rutinas_tree.bind('<<TreeviewSelect>>', self.on_rutina_selected)
+
+    def cargar_rutinas(self):
+        """Carga las rutinas desde la base de datos"""
+        try:
+            print("🔄 Cargando rutinas...")
+            
+            rutinas = self.rutina_controller.obtener_rutinas()
+            self.rutinas_data = rutinas if rutinas else []
+            
+            print(f"✅ Cargadas {len(self.rutinas_data)} rutinas")
+            
+            # Actualizar tabla
+            self.actualizar_tabla_rutinas()
+            
+        except Exception as e:
+            print(f"❌ Error cargando rutinas: {e}")
+            messagebox.showerror("Error", f"Error al cargar rutinas:\n{e}")
+
+    def on_rutina_selected(self, event):
+        """Maneja la selección de rutina en la tabla"""
+        selection = self.rutinas_tree.selection()
+        if selection:
+            # Habilitar botones
+            self.view_rutina_btn.config(state='normal')
+            self.edit_rutina_btn.config(state='normal')
+            self.delete_rutina_btn.config(state='normal')
+            
+            # Obtener rutina seleccionada
+            item = self.rutinas_tree.item(selection[0])
+            rutina_id = item['values'][0]
+            
+            # Buscar rutina completa en los datos
+            for rutina in self.rutinas_data:
+                if rutina[0] == rutina_id:
+                    self.rutina_seleccionada = rutina
+                    break
+        else:
+            # Deshabilitar botones
+            self.view_rutina_btn.config(state='disabled')
+            self.edit_rutina_btn.config(state='disabled')
+            self.delete_rutina_btn.config(state='disabled')
+            self.rutina_seleccionada = None
+
+    def crear_rutina(self):
+        """Abre el formulario para crear una nueva rutina"""
+        self.abrir_formulario_rutina(modo='crear')
+
+    def ver_rutina_completa(self):
+        """Muestra la rutina completa con sus ejercicios"""
+        if not self.rutina_seleccionada:
+            return
+        
+        rutina_id = self.rutina_seleccionada[0]
+        rutina_completa = self.rutina_controller.obtener_rutina_completa(rutina_id)
+        
+        # Ventana modal para mostrar la rutina
+        ventana = tk.Toplevel(self.root)
+        ventana.title(f"Rutina: {self.rutina_seleccionada[1]}")
+        ventana.geometry("600x400")
+        ventana.transient(self.root)
+        
+        # Mostrar ejercicios de la rutina
+        for ejercicio in rutina_completa:
+            texto = f"{ejercicio[1]} - {ejercicio[2]} series x {ejercicio[3]} rondas ({ejercicio[4]})"
+            ttk.Label(ventana, text=texto).pack(pady=2)
+
+    def filtrar_rutinas(self, *args):
+        """Filtra rutinas según búsqueda y nivel"""
+        search_text = self.search_rutinas_var.get().lower()
+        nivel_filter = self.nivel_filter_var.get()
+        
+        if not search_text and nivel_filter == "Todos":
+            self.actualizar_tabla_rutinas()
+            return
+        
+        rutinas_filtradas = []
+        
+        for rutina in self.rutinas_data:
+            # Filtro de texto
+            texto_busqueda = f"{rutina[1]} {rutina[3]}".lower()  # nombre + descripcion
+            if search_text and search_text not in texto_busqueda:
+                continue
+            
+            # Filtro de nivel
+            if nivel_filter != "Todos" and rutina[2] != nivel_filter:
+                continue
+            
+            rutinas_filtradas.append(rutina)
+        
+        self.actualizar_tabla_rutinas(rutinas_filtradas)
+
+    def actualizar_tabla_rutinas(self, rutinas_filtradas=None):
+        """Actualiza la tabla con las rutinas"""
+        # Limpiar tabla
+        for item in self.rutinas_tree.get_children():
+            self.rutinas_tree.delete(item)
+        
+        # Usar rutinas filtradas o todas
+        rutinas = rutinas_filtradas if rutinas_filtradas is not None else self.rutinas_data
+        
+        # Llenar tabla
+        for rutina in rutinas:
+            try:
+                # rutina = (id, nombre, nivel, descripcion, creado_por, fecha_creacion)
+                rutina_id = rutina[0]
+                nombre = rutina[1]
+                nivel = rutina[2]
+                creado_por = f"Usuario {rutina[4]}"  # Por ahora ID, después puedes mapear a nombre
+                
+                # Contar ejercicios de esta rutina
+                num_ejercicios = self.rutina_controller.contar_ejercicios_rutina(rutina_id)
+                
+                # Formatear fecha
+                try:
+                    if rutina[5]:
+                        fecha = str(rutina[5])[:10]
+                    else:
+                        fecha = "N/A"
+                except:
+                    fecha = "N/A"
+                
+                # Insertar fila
+                self.rutinas_tree.insert('', 'end', values=(
+                    rutina_id, nombre, nivel, num_ejercicios, creado_por, fecha
+                ))
+                
+            except Exception as e:
+                print(f"Error procesando rutina: {e}")
+                continue
+
+    def editar_rutina(self):
+        """Abre formulario para editar rutina"""
+        if not self.rutina_seleccionada:
+            messagebox.showwarning("Advertencia", "Selecciona una rutina para editar")
+            return
+        
+        self.abrir_formulario_rutina(modo='editar', rutina=self.rutina_seleccionada)
+
+    def eliminar_rutina(self):
+        """Elimina la rutina seleccionada"""
+        if not self.rutina_seleccionada:
+            messagebox.showwarning("Advertencia", "Selecciona una rutina para eliminar")
+            return
+        
+        rutina_nombre = self.rutina_seleccionada[1]
+        respuesta = messagebox.askyesno(
+            "Confirmar Eliminación",
+            f"¿Estás seguro que deseas eliminar la rutina '{rutina_nombre}'?\n\nEsta acción eliminará también todos los ejercicios asociados."
+        )
+        
+        if respuesta:
+            try:
+                rutina_id = self.rutina_seleccionada[0]
+                resultado = self.rutina_controller.eliminar_rutina(rutina_id)
+                
+                if resultado:
+                    messagebox.showinfo("Éxito", "Rutina eliminada exitosamente")
+                    self.cargar_rutinas()
+                else:
+                    messagebox.showerror("Error", "Error al eliminar la rutina")
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"Error al eliminar rutina:\n{e}")
+
+    def abrir_formulario_rutina(self, modo='crear', rutina=None):
+        """Formulario ÚNICO para crear rutina completa con ejercicios"""
+        # Crear ventana modal
+        self.rutina_form_window = tk.Toplevel(self.root)
+        self.rutina_form_window.title(f"{'Crear' if modo == 'crear' else 'Editar'} Rutina Completa")
+        self.rutina_form_window.geometry("800x1200")
+        self.rutina_form_window.transient(self.root)
+        self.rutina_form_window.grab_set()
+        
+        main_frame = ttk.Frame(self.rutina_form_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        # Título
+        ttk.Label(main_frame, text=f"{'➕ CREAR' if modo == 'crear' else '✏️ EDITAR'} RUTINA",
+                font=('Segoe UI', 16, 'bold')).pack(pady=(0, 20))
+        
+        # SECCIÓN 1: DATOS DE LA RUTINA
+        rutina_frame = ttk.LabelFrame(main_frame, text="📋 DATOS DE LA RUTINA", padding=15)
+        rutina_frame.pack(fill='x', pady=(0, 20))
+        
+        # Variables del formulario
+        self.nombre_rutina_var = tk.StringVar()
+        self.nivel_rutina_var = tk.StringVar()
+        
+        # Campos básicos
+        ttk.Label(rutina_frame, text="Nombre de la Rutina *:").grid(row=0, column=0, sticky='w', pady=5)
+        ttk.Entry(rutina_frame, textvariable=self.nombre_rutina_var, width=40).grid(row=0, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        ttk.Label(rutina_frame, text="Nivel *:").grid(row=1, column=0, sticky='w', pady=5)
+        ttk.Combobox(rutina_frame, textvariable=self.nivel_rutina_var, 
+                    values=['Principiante', 'Intermedio', 'Avanzado'], 
+                    state='readonly', width=37).grid(row=1, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        ttk.Label(rutina_frame, text="Descripción:").grid(row=2, column=0, sticky='nw', pady=5)
+        self.descripcion_rutina_text = tk.Text(rutina_frame, height=3, width=40)
+        self.descripcion_rutina_text.grid(row=2, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        rutina_frame.grid_columnconfigure(1, weight=1)
+        
+        # SECCIÓN 2: AGREGAR EJERCICIOS
+        ejercicios_frame = ttk.LabelFrame(main_frame, text="💪 AGREGAR EJERCICIOS", padding=15)
+        ejercicios_frame.pack(fill='both', expand=True, pady=(0, 20))
+        
+        # Formulario para agregar ejercicio
+        add_frame = ttk.Frame(ejercicios_frame)
+        add_frame.pack(fill='x', pady=(0, 15))
+        
+        # Variables para ejercicios
+        self.nombre_ejercicio_var = tk.StringVar()
+        self.tipo_ejercicio_var = tk.StringVar(value='Fuerza')
+        self.series_var = tk.StringVar(value='3')
+        self.rondas_var = tk.StringVar(value='10')
+        
+        # Primera fila: Nombre y Tipo
+        ttk.Label(add_frame, text="Ejercicio:").grid(row=0, column=0, sticky='w', padx=(0, 5))
+        ttk.Entry(add_frame, textvariable=self.nombre_ejercicio_var, width=25).grid(row=0, column=1, padx=(0, 10))
+        
+        ttk.Label(add_frame, text="Tipo:").grid(row=0, column=2, sticky='w', padx=(0, 5))
+        ttk.Combobox(add_frame, textvariable=self.tipo_ejercicio_var, 
+                    values=['Fuerza', 'Cardio', 'Flexibilidad'], 
+                    state='readonly', width=15).grid(row=0, column=3, padx=(0, 10))
+        
+        # Segunda fila: Series y Rondas
+        ttk.Label(add_frame, text="Series:").grid(row=1, column=0, sticky='w', padx=(0, 5), pady=(10, 0))
+        ttk.Entry(add_frame, textvariable=self.series_var, width=10).grid(row=1, column=1, sticky='w', pady=(10, 0))
+        
+        ttk.Label(add_frame, text="Rondas:").grid(row=1, column=2, sticky='w', padx=(0, 5), pady=(10, 0))
+        ttk.Entry(add_frame, textvariable=self.rondas_var, width=10).grid(row=1, column=3, sticky='w', pady=(10, 0))
+        
+        # Botón agregar ejercicio
+        ttk.Button(add_frame, text="➕ Agregar a Rutina", 
+                command=self.agregar_ejercicio_a_lista).grid(row=1, column=4, padx=(10, 0), pady=(10, 0))
+        
+        # Lista de ejercicios agregados
+        self.ejercicios_rutina = []
+        
+        # Tabla de ejercicios
+        list_frame = ttk.Frame(ejercicios_frame)
+        list_frame.pack(fill='both', expand=True)
+        
+        columns = ('Ejercicio', 'Tipo', 'Series', 'Rondas')
+        self.ejercicios_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=4)
+        
+        for col in columns:
+            self.ejercicios_tree.heading(col, text=col)
+            self.ejercicios_tree.column(col, width=150)
+        
+        scrollbar = ttk.Scrollbar(list_frame, orient='vertical', command=self.ejercicios_tree.yview)
+        self.ejercicios_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.ejercicios_tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Bind para selección
+        self.ejercicios_tree.bind('<<TreeviewSelect>>', self.on_ejercicio_form_selected)
+        
+        # Botón quitar ejercicio
+        ttk.Button(ejercicios_frame, text="➖ Quitar Seleccionado", 
+                command=self.quitar_ejercicio_seleccionado).pack(pady=(10, 0))
+        
+        # BOTONES FINALES
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(fill='x', pady=(20, 0))
+        
+        ttk.Button(buttons_frame, text="❌ Cancelar", 
+                command=self.rutina_form_window.destroy).pack(side='right', padx=(5, 0))
+        
+        ttk.Button(buttons_frame, text=f"💾 {'Crear Rutina Completa' if modo == 'crear' else 'Guardar Cambios'}", 
+                command=lambda: self.guardar_rutina_final(modo)).pack(side='right')
+
+
+    def agregar_ejercicio_a_lista(self):
+        """Agrega ejercicio a la lista de la rutina"""
+        # Validar campos
+        if not self.nombre_ejercicio_var.get().strip():
+            messagebox.showerror("Error", "Ingresa el nombre del ejercicio")
+            return
+        
+        try:
+            series = int(self.series_var.get())
+            rondas = int(self.rondas_var.get())
+            if series <= 0 or rondas <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Error", "Series y rondas deben ser números positivos")
+            return
+        
+        # Agregar a la lista
+        ejercicio = {
+            'nombre': self.nombre_ejercicio_var.get().strip(),
+            'tipo': self.tipo_ejercicio_var.get(),
+            'series': series,
+            'rondas': rondas
+        }
+        
+        self.ejercicios_rutina.append(ejercicio)
+        
+        # Actualizar tabla
+        self.actualizar_tabla_ejercicios()
+        
+        # Limpiar campos
+        self.nombre_ejercicio_var.set('')
+        self.series_var.set('3')
+        self.rondas_var.set('10')
+
+    def guardar_rutina_final(self, modo):
+        """Guarda la rutina completa con todos los ejercicios"""
+        try:
+            # Validar rutina
+            if not self.nombre_rutina_var.get().strip():
+                messagebox.showerror("Error", "Ingresa el nombre de la rutina")
+                return
+            
+            if not self.nivel_rutina_var.get():
+                messagebox.showerror("Error", "Selecciona el nivel")
+                return
+            
+            if len(self.ejercicios_rutina) == 0:
+                messagebox.showerror("Error", "Agrega al menos un ejercicio")
+                return
+            
+            # Crear rutina
+            nombre_rutina = self.nombre_rutina_var.get().strip()
+            nivel = self.nivel_rutina_var.get()
+            descripcion = self.descripcion_rutina_text.get('1.0', 'end-1c').strip()
+            
+            rutina_id = self.rutina_controller.crear_rutina(
+                nombre_rutina, nivel, descripcion, self.usuario_actual['id']
+            )
+            
+            if rutina_id:
+                # Crear y asignar cada ejercicio
+                for i, ejercicio in enumerate(self.ejercicios_rutina):
+                    # Crear ejercicio en BD
+                    ejercicio_id = self.rutina_controller.crear_ejercicio(
+                        ejercicio['nombre'],
+                        ejercicio['tipo'],
+                        f"Ejercicio de {ejercicio['tipo'].lower()}",
+                        f"Realizar {ejercicio['series']} series de {ejercicio['rondas']} repeticiones"
+                    )
+                    
+                    if ejercicio_id:
+                        # Asignar a rutina
+                        self.rutina_controller.asignar_ejercicio_a_rutina(
+                            rutina_id, ejercicio_id, nivel,
+                            ejercicio['series'], ejercicio['rondas'], i + 1
+                        )
+                
+                messagebox.showinfo("Éxito", f"Rutina '{nombre_rutina}' creada con {len(self.ejercicios_rutina)} ejercicios")
+                self.rutina_form_window.destroy()
+                self.cargar_rutinas()
+            else:
+                messagebox.showerror("Error", "Error al crear la rutina")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar: {e}")
+
+
+    def quitar_ejercicio_seleccionado(self):
+        """Quita el ejercicio seleccionado de la lista"""
+        selection = self.ejercicios_tree.selection()
+        if not selection:
+            messagebox.showwarning("Advertencia", "Selecciona un ejercicio para quitar")
+            return
+        
+        # Obtener índice
+        item = self.ejercicios_tree.item(selection[0])
+        nombre_ejercicio = item['values'][0]
+        
+        # Quitar de la lista
+        self.ejercicios_rutina = [ej for ej in self.ejercicios_rutina if ej['nombre'] != nombre_ejercicio]
+        
+        # Actualizar tabla
+        self.actualizar_tabla_ejercicios()
+
+    def validar_formulario_rutina_completa(self):
+        """Valida el formulario completo de rutina"""
+        if not self.rutina_form_vars['nombre_rutina'].get().strip():
+            messagebox.showerror("Error", "El nombre de la rutina es requerido")
+            return False
+        
+        if not self.rutina_form_vars['nivel'].get():
+            messagebox.showerror("Error", "El nivel es requerido")
+            return False
+        
+        if len(self.ejercicios_rutina) == 0:
+            messagebox.showerror("Error", "Debes agregar al menos un ejercicio a la rutina")
+            return False
+        
+        return True
+    
+
+    def crear_seccion_datos_rutina(self, parent):
+        """Crea la sección de datos básicos de la rutina"""
+        seccion_frame = ttk.LabelFrame(parent, text="📋 DATOS DE LA RUTINA", padding=15)
+        seccion_frame.pack(fill='x', pady=(0, 20))
+        
+        # Nombre de la rutina
+        ttk.Label(seccion_frame, text="Nombre de la Rutina *").grid(row=0, column=0, sticky='w', pady=5)
+        ttk.Entry(seccion_frame, textvariable=self.rutina_form_vars['nombre_rutina'], width=50).grid(
+            row=0, column=1, sticky='ew', pady=5, padx=(10, 0)
+        )
+        
+        # Nivel
+        ttk.Label(seccion_frame, text="Nivel *").grid(row=1, column=0, sticky='w', pady=5)
+        nivel_combo = ttk.Combobox(
+            seccion_frame,
+            textvariable=self.rutina_form_vars['nivel'],
+            values=['Principiante', 'Intermedio', 'Avanzado'],
+            state='readonly',
+            width=47
+        )
+        nivel_combo.grid(row=1, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        # Descripción
+        ttk.Label(seccion_frame, text="Descripción").grid(row=2, column=0, sticky='nw', pady=(5, 0))
+        self.descripcion_rutina_text = tk.Text(seccion_frame, height=4, width=50)
+        self.descripcion_rutina_text.grid(row=2, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        # Si hay descripción previa, cargarla
+        if self.rutina_form_vars['descripcion'].get():
+            self.descripcion_rutina_text.insert('1.0', self.rutina_form_vars['descripcion'].get())
+        
+        seccion_frame.grid_columnconfigure(1, weight=1)
+
+    def crear_seccion_ejercicios_rutina(self, parent):
+        """Crea la sección para gestionar ejercicios de la rutina"""
+        seccion_frame = ttk.LabelFrame(parent, text="💪 EJERCICIOS DE LA RUTINA", padding=15)
+        seccion_frame.pack(fill='both', expand=True, pady=(0, 20))
+        
+        # Botones para gestionar ejercicios
+        btn_frame = ttk.Frame(seccion_frame)
+        btn_frame.pack(fill='x', pady=(0, 10))
+        
+        ttk.Button(
+            btn_frame,
+            text="➕ Agregar Ejercicio",
+            command=self.agregar_ejercicio_a_rutina_form
+        ).pack(side='left', padx=(0, 10))
+        
+        self.quitar_ejercicio_btn = ttk.Button(
+            btn_frame,
+            text="➖ Quitar Ejercicio",
+            command=self.quitar_ejercicio_de_rutina_form,
+            state='disabled'
+        )
+        self.quitar_ejercicio_btn.pack(side='left')
+        
+        # Tabla de ejercicios agregados
+        self.crear_tabla_ejercicios_form(seccion_frame)
+        
+        # Actualizar tabla si hay ejercicios
+        self.actualizar_tabla_ejercicios_form()
+
+    def crear_tabla_ejercicios_form(self, parent):
+        """Crea la tabla de ejercicios en el formulario"""
+        table_frame = ttk.Frame(parent)
+        table_frame.pack(fill='both', expand=True)
+        
+        columns = ('Orden', 'Ejercicio', 'Tipo', 'Nivel', 'Series', 'Rondas')
+        self.ejercicios_form_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=8)
+        
+        # Configurar encabezados
+        for col in columns:
+            self.ejercicios_form_tree.heading(col, text=col)
+            self.ejercicios_form_tree.column(col, width=100)
+        
+        # Scrollbar
+        scrollbar_ej = ttk.Scrollbar(table_frame, orient='vertical', command=self.ejercicios_form_tree.yview)
+        self.ejercicios_form_tree.configure(yscrollcommand=scrollbar_ej.set)
+        
+        self.ejercicios_form_tree.pack(side='left', fill='both', expand=True)
+        scrollbar_ej.pack(side='right', fill='y')
+        
+        # Bind para selección
+        self.ejercicios_form_tree.bind('<<TreeviewSelect>>', self.on_ejercicio_form_selected)
+
+    def agregar_ejercicio_a_rutina_form(self):
+        """Abre formulario para CREAR Y agregar ejercicio a la rutina"""
+        # Ventana para crear nuevo ejercicio
+        ejercicio_window = tk.Toplevel(self.rutina_form_window)
+        ejercicio_window.title("Crear Nuevo Ejercicio")
+        ejercicio_window.geometry("600x400")
+        ejercicio_window.transient(self.rutina_form_window)
+        ejercicio_window.grab_set()
+        
+        main_frame = ttk.Frame(ejercicio_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        ttk.Label(main_frame, text="➕ CREAR NUEVO EJERCICIO", font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
+        
+        # Variables para el ejercicio
+        nombre_ejercicio_var = tk.StringVar()
+        tipo_ejercicio_var = tk.StringVar(value='Fuerza')
+        descripcion_ejercicio_var = tk.StringVar()
+        
+        # Variables para parámetros en rutina
+        nivel_var = tk.StringVar(value='Principiante')
+        series_var = tk.StringVar(value='3')
+        rondas_var = tk.StringVar(value='10')
+        
+        # Formulario del ejercicio
+        form_frame = ttk.LabelFrame(main_frame, text="Datos del Ejercicio", padding=10)
+        form_frame.pack(fill='x', pady=(0, 20))
+        
+        # Nombre del ejercicio
+        ttk.Label(form_frame, text="Nombre del Ejercicio *:").grid(row=0, column=0, sticky='w', pady=5)
+        ttk.Entry(form_frame, textvariable=nombre_ejercicio_var, width=40).grid(row=0, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        # Tipo de ejercicio
+        ttk.Label(form_frame, text="Tipo *:").grid(row=1, column=0, sticky='w', pady=5)
+        ttk.Combobox(form_frame, textvariable=tipo_ejercicio_var, 
+                    values=['Fuerza', 'Cardio', 'Flexibilidad'], 
+                    state='readonly', width=37).grid(row=1, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        # Descripción
+        ttk.Label(form_frame, text="Descripción:").grid(row=2, column=0, sticky='w', pady=5)
+        ttk.Entry(form_frame, textvariable=descripcion_ejercicio_var, width=40).grid(row=2, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        # Instrucciones
+        ttk.Label(form_frame, text="Instrucciones:").grid(row=3, column=0, sticky='nw', pady=5)
+        instrucciones_text = tk.Text(form_frame, height=3, width=40)
+        instrucciones_text.grid(row=3, column=1, sticky='ew', pady=5, padx=(10, 0))
+        
+        form_frame.grid_columnconfigure(1, weight=1)
+        
+        # Parámetros para la rutina
+        params_frame = ttk.LabelFrame(main_frame, text="Parámetros en la Rutina", padding=10)
+        params_frame.pack(fill='x', pady=(0, 20))
+        
+        # Primera fila
+        ttk.Label(params_frame, text="Nivel:").grid(row=0, column=0, sticky='w', padx=(0, 10))
+        ttk.Combobox(params_frame, textvariable=nivel_var, 
+                    values=['Principiante', 'Intermedio', 'Avanzado'], 
+                    state='readonly', width=15).grid(row=0, column=1, padx=(0, 20))
+        
+        ttk.Label(params_frame, text="Series:").grid(row=0, column=2, sticky='w', padx=(0, 10))
+        ttk.Entry(params_frame, textvariable=series_var, width=10).grid(row=0, column=3, padx=(0, 20))
+        
+        ttk.Label(params_frame, text="Rondas:").grid(row=0, column=4, sticky='w', padx=(0, 10))
+        ttk.Entry(params_frame, textvariable=rondas_var, width=10).grid(row=0, column=5)
+        
+        # Botones
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(fill='x')
+        
+        def crear_y_agregar_ejercicio():
+            # Validar campos requeridos
+            if not nombre_ejercicio_var.get().strip():
+                messagebox.showerror("Error", "El nombre del ejercicio es requerido")
+                return
+            
+            if not tipo_ejercicio_var.get():
+                messagebox.showerror("Error", "El tipo de ejercicio es requerido")
+                return
+            
+            # Validar series y rondas
+            try:
+                series = int(series_var.get())
+                rondas = int(rondas_var.get())
+                if series <= 0 or rondas <= 0:
+                    raise ValueError
+            except ValueError:
+                messagebox.showerror("Error", "Series y rondas deben ser números positivos")
+                return
+            
+            # Crear ejercicio en la base de datos
+            instrucciones = instrucciones_text.get('1.0', 'end-1c').strip()
+            ejercicio_id = self.rutina_controller.crear_ejercicio(
+                nombre_ejercicio_var.get().strip(),
+                tipo_ejercicio_var.get(),
+                descripcion_ejercicio_var.get().strip(),
+                instrucciones
+            )
+            
+            if ejercicio_id:
+                # Agregar a la lista de ejercicios de la rutina
+                nuevo_ejercicio = {
+                    'id': ejercicio_id,
+                    'nombre': nombre_ejercicio_var.get().strip(),
+                    'tipo': tipo_ejercicio_var.get(),
+                    'nivel': nivel_var.get(),
+                    'series': series,
+                    'rondas': rondas,
+                    'orden': len(self.ejercicios_rutina) + 1
+                }
+                
+                self.ejercicios_rutina.append(nuevo_ejercicio)
+                self.actualizar_tabla_ejercicios_form()
+                ejercicio_window.destroy()
+                messagebox.showinfo("Éxito", f"Ejercicio '{nuevo_ejercicio['nombre']}' creado y agregado")
+            else:
+                messagebox.showerror("Error", "Error al crear el ejercicio")
+        
+        ttk.Button(btn_frame, text="➕ Crear y Agregar", command=crear_y_agregar_ejercicio).pack(side='right')
+        ttk.Button(btn_frame, text="❌ Cancelar", command=ejercicio_window.destroy).pack(side='right', padx=(0, 10))
+
+    def actualizar_tabla_ejercicios(self):
+        """Actualiza la tabla de ejercicios"""
+        # Limpiar tabla
+        for item in self.ejercicios_tree.get_children():
+            self.ejercicios_tree.delete(item)
+        
+        # Llenar con ejercicios
+        for ejercicio in self.ejercicios_rutina:
+            self.ejercicios_tree.insert('', 'end', values=(
+                ejercicio['nombre'],
+                ejercicio['tipo'],
+                ejercicio['series'],
+                ejercicio['rondas']
+            ))
+
+    def on_ejercicio_form_selected(self, event):
+        """Maneja selección en tabla de ejercicios del formulario"""
+        selection = self.ejercicios_form_tree.selection()
+        if selection:
+            self.quitar_ejercicio_btn.config(state='normal')
+        else:
+            self.quitar_ejercicio_btn.config(state='disabled')
+
+    def quitar_ejercicio_de_rutina_form(self):
+        """Quita ejercicio seleccionado de la rutina"""
+        messagebox.showinfo("Función pendiente", "Quitar ejercicios próximamente")
+
+    def crear_botones_formulario_rutina_completa(self, parent, modo):
+        """Crea botones del formulario completo"""
+        buttons_frame = ttk.Frame(parent)
+        buttons_frame.pack(fill='x', pady=(20, 0))
+        
+        ttk.Button(
+            buttons_frame,
+            text="❌ Cancelar",
+            command=self.rutina_form_window.destroy
+        ).pack(side='right', padx=(5, 0))
+        
+        ttk.Button(
+            buttons_frame,
+            text=f"💾 {'Crear Rutina' if modo == 'crear' else 'Guardar Cambios'}",
+            command=lambda: self.guardar_rutina_completa(modo)
+        ).pack(side='right')
+
+    def guardar_rutina_completa(self, modo):
+        """Guarda la rutina completa con ejercicios"""
+        try:
+            # Validar datos básicos
+            if not self.validar_formulario_rutina_completa():
+                return
+            
+            # Recoger datos
+            nombre_rutina = self.rutina_form_vars['nombre_rutina'].get().strip()
+            nivel = self.rutina_form_vars['nivel'].get()
+            descripcion = self.descripcion_rutina_text.get('1.0', 'end-1c').strip()
+            
+            if modo == 'crear':
+                # Crear rutina
+                rutina_id = self.rutina_controller.crear_rutina(
+                    nombre_rutina, nivel, descripcion, self.usuario_actual['id']
+                )
+                
+                if rutina_id:
+                    # Agregar cada ejercicio a la rutina
+                    for ejercicio in self.ejercicios_rutina:
+                        self.rutina_controller.asignar_ejercicio_a_rutina(
+                            rutina_id, 
+                            ejercicio['id'], 
+                            ejercicio['nivel'],
+                            ejercicio['series'], 
+                            ejercicio['rondas'], 
+                            ejercicio['orden']
+                        )
+                    
+                    messagebox.showinfo("Éxito", f"Rutina '{nombre_rutina}' creada con {len(self.ejercicios_rutina)} ejercicios")
+                    self.rutina_form_window.destroy()
+                    self.cargar_rutinas()
+                else:
+                    messagebox.showerror("Error", "Error al crear la rutina")
+            
+            else:
+                # Editar rutina existente
+                rutina_id = self.rutina_seleccionada[0]
+                
+                if self.rutina_controller.actualizar_rutina(rutina_id, nombre_rutina, nivel, descripcion):
+                    messagebox.showinfo("Éxito", "Rutina actualizada exitosamente")
+                    self.rutina_form_window.destroy()
+                    self.cargar_rutinas()
+                else:
+                    messagebox.showerror("Error", "Error al actualizar la rutina")
+                    
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar rutina:\n{e}")
+
     # ==================== VERIFICACIÓN DE PERMISOS ====================
     
     def verificar_permisos(self, roles_permitidos):

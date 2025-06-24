@@ -288,7 +288,7 @@ class AtletaController:
         """Obtiene atletas asignados a un coach específico"""
         try:
             atletas = self.atleta_model.read_atletas()
-            atletas_coach = [a for a in atletas if a[6] == coach_id]  # id_coach en posición 6
+            atletas_coach = [a for a in atletas if a[6] == coach_id]  
             return {"success": True, "atletas": atletas_coach}
         except Exception as e:
             return {"success": False, "message": f"Error al obtener atletas del coach: {str(e)}"}
@@ -398,17 +398,9 @@ class AtletaController:
             return False
     
     def _validar_datos_completos(self, datos_atleta, datos_usuario):
-        # Esta función parece redundante con _validar_datos_atleta_basicos y la validación de usuario, se mantiene por consistencia
         return {"success": True}
     
-    def _cedula_existe(self, cedula):
-        """Verifica si la cédula ya está registrada"""
-        try:
-            atletas = self.atleta_model.read_atletas()
-            return any(atleta[2] == cedula for atleta in atletas)
-        except Exception:
-            return False
-    
+   
     def _coach_existe(self, coach_id):
         """Verifica si el coach existe"""
         try:
@@ -419,6 +411,15 @@ class AtletaController:
         except Exception:
             return False
     
+
+    def _cedula_existe(self, cedula):
+        """Verifica si la cédula ya está registrada"""
+        try:
+            atletas = self.atleta_model.read_atletas()
+            return any(atleta[2] == cedula for atleta in atletas)
+        except Exception:
+            return False
+ 
     def _obtener_atleta_id_por_usuario(self, usuario_id):
         """Obtiene el ID del atleta por ID de usuario"""
         try:
@@ -432,9 +433,6 @@ class AtletaController:
     
     def _actualizar_estado_membresia(self, atleta_id, fecha_vencimiento, estado_solvencia, fecha_ultimo_pago):
         """Actualiza el estado de membresía del atleta"""
-        # NOTA: Este método depende de que la tabla 'atletas' tenga campos para
-        # fecha_vencimiento, estado_solvencia, etc., y que 'update_atleta' en el modelo
-        # pueda actualizarlos, lo cual no está en el código original. Se asume su existencia.
         print(f"Lógica para actualizar membresía del atleta {atleta_id} no implementada en el modelo.")
         pass
     
