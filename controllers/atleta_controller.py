@@ -3,6 +3,7 @@ from models.atleta_model import AtletaModel
 from models.usuario_model import UsuarioModel
 from controllers.user_controller import UserController
 from controllers.finance_controller import FinanceController
+from models.coach_model import CoachModel
 from datetime import datetime, date
 import re
 
@@ -13,6 +14,7 @@ class AtletaController:
         self.usuario_model = UsuarioModel()
         self.user_controller = UserController()
         self.finance_controller = FinanceController()
+        self.coach_model = CoachModel()
     
     # ==================== REGISTRO COMPLETO DE ATLETA ====================
     
@@ -345,9 +347,9 @@ class AtletaController:
                 cedula=atleta_data[2],
                 peso=atleta_data[3],
                 fecha_nacimiento=atleta_data[4],
-                id_plan=atleta_data[5],
+                id_plan=atleta_data[7],
                 id_coach=coach_id,
-                meta_largo_plazo=atleta_data[8],
+                meta_largo_plazo=atleta_data[9],
                 valoracion_especiales=atleta_data[10]
             )
             
@@ -402,15 +404,21 @@ class AtletaController:
     
    
     def _coach_existe(self, coach_id):
-        """Verifica si el coach existe"""
+        """Verifica si el coach existe en la tabla coaches"""
         try:
-            coach = self.usuario_model.get_user_by_id(coach_id)
-            if coach:
-                return coach[8] == 'coach'  # rol en posición 8
-            return False
+            coaches = self.coach_model.read_coaches()
+            return any(coach[0] == coach_id for coach in coaches)  # id_coach en posición 0
         except Exception:
             return False
-    
+
+    def obtener_coaches_disponibles(self):
+        """Obtiene lista de coaches disponibles para asignar"""
+        try:
+            # Primero necesitas el método get_coaches_disponibles en coach_model
+            coaches = self.coach_model.get_coaches_disponibles()  
+            return {"success": True, "coaches": coaches}
+        except Exception as e:
+            return {"success": False, "message": f"Error al obtener coaches: {str(e)}"}
 
     def _cedula_existe(self, cedula):
         """Verifica si la cédula ya está registrada"""
@@ -481,9 +489,9 @@ class AtletaController:
                 cedula=datos_atleta.get('cedula', atleta_data[2]),
                 peso=datos_atleta.get('peso', atleta_data[3]),
                 fecha_nacimiento=datos_atleta.get('fecha_nacimiento', atleta_data[4]),
-                id_plan=atleta_data[5],
+                id_plan=atleta_data[7],
                 id_coach=datos_atleta.get('id_coach', atleta_data[6]),
-                meta_largo_plazo=datos_atleta.get('meta_largo_plazo', atleta_data[8]),
+                meta_largo_plazo=datos_atleta.get('meta_largo_plazo', atleta_data[9]),
                 valoracion_especiales=datos_atleta.get('valoracion_especiales', atleta_data[10])
             )
             

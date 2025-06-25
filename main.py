@@ -42,21 +42,131 @@ class GimnasioApp:
         
     
     def configurar_estilos(self):
-        """Configura estilos globales de la aplicación"""
+        """Configura estilos globales de la aplicación - ATHENA STYLE"""
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Colores del sistema
+        # Colores del sistema Athena
         self.colores = {
-            'primario': '#1e3a8a',
-            'secundario': '#3b82f6', 
-            'acento': '#60a5fa',
+            'primary_green': '#B8E000',     # Verde lima principal
+            'primary_purple': '#8B5CF6',    # Púrpura principal  
+            'dark_purple': '#6B46C1',       # Púrpura oscuro
+            'accent_lime': '#84CC16',       # Verde lima acento
+            'dark_bg': '#0F0F23',           # Fondo oscuro
+            'card_bg': '#1A1A2E',           # Fondo de tarjetas
+            'text_primary': '#FFFFFF',      # Texto principal
+            'text_secondary': '#94A3B8',    # Texto secundario
+            'border_color': '#8B5CF633',    # Color de bordes (con alpha)
+            'hover_bg': '#B8E01A',          # Fondo hover
+            'shadow_color': '#8B5CF64D',    # Color de sombras
             'success': '#10b981',
-            'warning': '#f59e0b',
-            'error': '#ef4444',
-            'fondo': '#f8fafc',
-            'texto': '#1f2937'
+            'warning': '#f59e0b', 
+            'error': '#ef4444'
         }
+        
+        # Configurar la ventana principal
+        self.root.configure(bg=self.colores['dark_bg'])
+        
+        # Estilo para frames principales
+        self.style.configure('Main.TFrame', 
+                            background=self.colores['dark_bg'],
+                            relief='flat')
+        
+        self.style.configure('Card.TFrame',
+                            background=self.colores['card_bg'],
+                            relief='raised',
+                            borderwidth=1)
+        
+        # Estilo para labels del header
+        self.style.configure('Header.TLabel',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 20, 'bold'))
+        
+        self.style.configure('HeaderSub.TLabel',
+                            background=self.colores['card_bg'], 
+                            foreground=self.colores['text_secondary'],
+                            font=('Segoe UI', 10))
+        
+        self.style.configure('User.TLabel',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 11, 'bold'))
+        
+        self.style.configure('UserRole.TLabel',
+                            background=self.colores['primary_purple'],
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 9),
+                            relief='raised',
+                            borderwidth=1)
+        
+        # Estilo para botones del menú lateral
+        self.style.configure('Menu.TButton',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 10, 'normal'),
+                            relief='flat',
+                            borderwidth=1,
+                            focuscolor='none')
+        
+        self.style.map('Menu.TButton',
+                    background=[('active', self.colores['hover_bg']),
+                                ('pressed', self.colores['primary_green'])],
+                    foreground=[('active', self.colores['dark_bg']),
+                                ('pressed', self.colores['dark_bg'])],
+                    relief=[('pressed', 'sunken')])
+        
+        # Estilo para botón activo del menú
+        self.style.configure('MenuActive.TButton',
+                            background=self.colores['primary_green'],
+                            foreground=self.colores['dark_bg'],
+                            font=('Segoe UI', 10, 'bold'),
+                            relief='raised',
+                            borderwidth=2)
+        
+        # Estilo para botón de cerrar sesión
+        self.style.configure('Logout.TButton',
+                            background='#EF4444',
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 10, 'bold'),
+                            relief='raised',
+                            borderwidth=1)
+        
+        self.style.map('Logout.TButton',
+                    background=[('active', '#DC2626')],
+                    relief=[('pressed', 'sunken')])
+        
+        # Estilo para el área de trabajo
+        self.style.configure('Work.TLabelFrame',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['primary_green'],
+                            font=('Segoe UI', 12, 'bold'),
+                            relief='raised',
+                            borderwidth=2)
+        
+        # Estilo para títulos principales
+        self.style.configure('Title.TLabel',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['primary_green'],
+                            font=('Segoe UI', 18, 'bold'))
+        
+        # Estilo para labels de información
+        self.style.configure('Info.TLabel',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_secondary'],
+                            font=('Segoe UI', 10))
+        
+        # Estilo para separadores
+        self.style.configure('Athena.TSeparator',
+                            background=self.colores['border_color'])
+        
+        # Estilo para LabelFrames de secciones
+        self.style.configure('Section.TLabelFrame',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['primary_purple'],
+                            font=('Segoe UI', 11, 'bold'),
+                            relief='raised',
+                            borderwidth=1)
     
     def inicializar_aplicacion(self):
         """Inicializa la aplicación verificando la conexión a BD"""
@@ -303,7 +413,7 @@ class GimnasioApp:
             ]
         elif rol == 'coach':
             return [
-                ("👥 Mis Atletas", self.abrir_mis_atletas),
+                ("👥 Mis Atletas", self.mostrar_mis_atletas_coach),
                 ("🏃‍♂️ Gestión de Rutinas", self.abrir_gestion_rutinas)
             ]
         else:
@@ -1074,6 +1184,21 @@ class GimnasioApp:
             print(f"Error cargando coaches: {e}")
             self.coach_combo['values'] = ["Todos", "Sin Coach"]
 
+
+    def _obtener_nombre_coach(self, coach_id):
+        """Obtiene el nombre del coach por su ID"""
+        try:
+            resultado = self.coach_controller.obtener_todos_coaches()
+            if resultado["success"]:
+                for coach_completo in resultado["coaches"]:
+                    if coach_completo['coach_data'][0] == coach_id:
+                        usuario_data = coach_completo['usuario_data']
+                        return f"{usuario_data[1]} {usuario_data[2]}"  # nombre + apellido
+            return f"Coach ID: {coach_id}"
+        except Exception as e:
+            print(f"Error obteniendo nombre coach: {e}")
+            return f"Coach ID: {coach_id}"
+
     def actualizar_tabla_atletas(self, atletas_filtrados=None):
         """Actualiza la tabla con los atletas"""
         # Limpiar tabla
@@ -1089,20 +1214,19 @@ class GimnasioApp:
                 atleta_data = atleta_completo['atleta_data']
                 usuario_data = atleta_completo['usuario_data']
                 
-                # Extraer datos
                 atleta_id = atleta_data[0]
                 nombre = usuario_data[1]
                 apellido = usuario_data[2]
                 cedula = atleta_data[2] if len(atleta_data) > 2 else "N/A"
                 email = usuario_data[6]
                 
-                # Plan (por ahora ID, luego podemos mapear a nombres)
                 plan = f"Plan {atleta_data[5]}" if len(atleta_data) > 5 else "N/A"
                 
-                # Coach (por ahora ID, luego podemos mapear a nombres)
-                coach_id = atleta_data[6] if len(atleta_data) > 6 else None
-                coach = f"Coach {coach_id}" if coach_id else "Sin Coach"
-                
+                plan = f"Plan {atleta_data[7]}" if len(atleta_data) > 7 else "N/A"
+
+                coach_id = atleta_data[8] if len(atleta_data) > 8 else None 
+                coach_nombre = self._obtener_nombre_coach(coach_id) if coach_id else "Sin Coach"
+
                 # Estado de solvencia
                 estado = atleta_data[9] if len(atleta_data) > 9 else "N/A"
                 
@@ -1120,7 +1244,7 @@ class GimnasioApp:
                 
                 # Insertar fila
                 item = self.atletas_tree.insert('', 'end', values=(
-                    atleta_id, nombre, apellido, cedula, email, plan, coach, estado, vencimiento
+                    atleta_id, nombre, apellido, cedula, email, plan, coach_nombre, estado, vencimiento
                 ))
                 
                 # Colorear según estado
@@ -1161,7 +1285,7 @@ class GimnasioApp:
                 
                 # Filtro de coach
                 if coach_filter != "Todos":
-                    coach_id = atleta_data[6] if len(atleta_data) > 6 else None
+                    coach_id = atleta_data[8] if len(atleta_data) > 8 else None
                     if coach_filter == "Sin Coach" and coach_id:
                         continue
                     elif coach_filter != "Sin Coach" and not coach_id:
@@ -1261,35 +1385,144 @@ class GimnasioApp:
         ttk.Button(btn_frame, text="✅ Renovar", command=procesar_renovacion).pack(side='left', padx=5)
         ttk.Button(btn_frame, text="❌ Cancelar", command=ventana.destroy).pack(side='left', padx=5)
 
+    
     def asignar_coach(self):
-        """Abre diálogo para asignar coach"""
+        """Abre diálogo para asignar coach con lista de disponibles"""
         if not self.atleta_seleccionado:
             messagebox.showwarning("Advertencia", "Selecciona un atleta")
             return
         
-        # Por ahora un diálogo simple
-        nuevo_coach = tk.simpledialog.askstring(
-            "Asignar Coach", 
-            "Ingresa el ID del coach (o deja vacío para remover):"
-        )
+        # Obtener coaches disponibles
+        resultado_coaches = self.atleta_controller.obtener_coaches_disponibles()
+        if not resultado_coaches["success"]:
+            messagebox.showerror("Error", "No se pudieron cargar los coaches disponibles")
+            return
         
-        if nuevo_coach is not None:  # Usuario no canceló
+        coaches_disponibles = resultado_coaches["coaches"]
+        
+        if not coaches_disponibles:
+            messagebox.showinfo("Sin coaches", "No hay coaches disponibles en el sistema")
+            return
+        
+        # Crear ventana modal para selección
+        coach_window = tk.Toplevel(self.root)
+        coach_window.title("Asignar Coach")
+        coach_window.geometry("500x400")
+        coach_window.transient(self.root)
+        coach_window.grab_set()
+        
+        # Centrar ventana
+        x = (coach_window.winfo_screenwidth() // 2) - 250
+        y = (coach_window.winfo_screenheight() // 2) - 200
+        coach_window.geometry(f"500x400+{x}+{y}")
+        
+        main_frame = ttk.Frame(coach_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        # Título
+        atleta_data = self.atleta_seleccionado['atleta_data']
+        usuario_data = self.atleta_seleccionado['usuario_data']
+        
+        ttk.Label(main_frame, 
+                text=f"Asignar Coach a: {usuario_data[1]} {usuario_data[2]}", 
+                font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
+        
+        # Lista de coaches
+        ttk.Label(main_frame, text="Selecciona un Coach:", font=('Segoe UI', 12)).pack(anchor='w', pady=(0, 10))
+        
+        # Frame para lista
+        list_frame = ttk.Frame(main_frame)
+        list_frame.pack(fill='both', expand=True, pady=(0, 20))
+        
+        # Crear Treeview
+        columns = ('Coach', 'Especialidades', 'Horario')
+        coaches_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=10)
+        
+        coaches_tree.heading('Coach', text='Coach')
+        coaches_tree.heading('Especialidades', text='Especialidades')
+        coaches_tree.heading('Horario', text='Horario Disponible')
+        
+        coaches_tree.column('Coach', width=150)
+        coaches_tree.column('Especialidades', width=150)
+        coaches_tree.column('Horario', width=150)
+        
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(list_frame, orient='vertical', command=coaches_tree.yview)
+        coaches_tree.configure(yscrollcommand=scrollbar.set)
+        
+        coaches_tree.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        # Llenar lista con coaches
+        coaches_dict = {}  # Para mapear selección a ID
+        for coach in coaches_disponibles:
+            coach_id = coach[0]
+            nombre_completo = coach[4]  # nombre_completo de la consulta JOIN
+            especialidades = coach[5] or "No especificado"
+            horario = coach[6] or "No especificado"
+            
+            item_id = coaches_tree.insert('', 'end', values=(nombre_completo, especialidades, horario))
+            coaches_dict[item_id] = coach_id
+        
+        # Variable para coach seleccionado
+        coach_seleccionado_id = None
+        
+        def on_coach_selected(event):
+            nonlocal coach_seleccionado_id
+            selection = coaches_tree.selection()
+            if selection:
+                coach_seleccionado_id = coaches_dict[selection[0]]
+                asignar_btn.config(state='normal')
+            else:
+                coach_seleccionado_id = None
+                asignar_btn.config(state='disabled')
+        
+        coaches_tree.bind('<<TreeviewSelect>>', on_coach_selected)
+        
+        # Botones
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(fill='x')
+        
+        def asignar_coach_seleccionado():
+            if coach_seleccionado_id:
+                try:
+                    resultado = self.atleta_controller.asignar_coach(
+                        atleta_data[0],  # id_atleta
+                        coach_seleccionado_id, 
+                        self.usuario_actual['id']
+                    )
+                    if resultado["success"]:
+                        messagebox.showinfo("Éxito", resultado["message"])
+                        coach_window.destroy()
+                        self.cargar_atletas()
+                    else:
+                        messagebox.showerror("Error", resultado["message"])
+                except Exception as e:
+                    messagebox.showerror("Error", f"Error: {e}")
+        
+        def remover_coach():
             try:
-                coach_id = int(nuevo_coach) if nuevo_coach.strip() else None
                 resultado = self.atleta_controller.asignar_coach(
-                    self.atleta_seleccionado['atleta_data'][0], 
-                    coach_id, 
+                    atleta_data[0],  # id_atleta
+                    None,  # Sin coach
                     self.usuario_actual['id']
                 )
                 if resultado["success"]:
                     messagebox.showinfo("Éxito", resultado["message"])
+                    coach_window.destroy()
                     self.cargar_atletas()
                 else:
                     messagebox.showerror("Error", resultado["message"])
-            except ValueError:
-                messagebox.showerror("Error", "ID de coach inválido")
             except Exception as e:
                 messagebox.showerror("Error", f"Error: {e}")
+        
+        # Botones
+        ttk.Button(buttons_frame, text="❌ Cancelar", command=coach_window.destroy).pack(side='right', padx=(5, 0))
+        ttk.Button(buttons_frame, text="🚫 Remover Coach", command=remover_coach).pack(side='right', padx=(5, 0))
+        
+        asignar_btn = ttk.Button(buttons_frame, text="✅ Asignar Coach", command=asignar_coach_seleccionado, state='disabled')
+        asignar_btn.pack(side='right', padx=(5, 0))
+
 
     def abrir_formulario_atleta(self, modo='registrar', atleta=None):
         """Abre el formulario modal para registrar/editar atleta con scrollbar"""
@@ -1949,7 +2182,7 @@ class GimnasioApp:
         # Ventana de gestión de asignaciones
         asign_window = tk.Toplevel(self.root)
         asign_window.title(f"Gestionar Asignaciones - {usuario_data[1]} {usuario_data[2]}")
-        asign_window.geometry("700x500")
+        asign_window.geometry("1200x600")
         asign_window.transient(self.root)
         
         main_frame = ttk.Frame(asign_window, padding=20)
@@ -1960,8 +2193,8 @@ class GimnasioApp:
                 text=f"👥 ASIGNACIONES DE {usuario_data[1]} {usuario_data[2]}", 
                 font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
         
-        # Obtener atletas asignados
-        resultado = self.coach_controller.obtener_atletas_por_coach(coach_id)
+        
+        resultado = self._obtener_atletas_por_coach_directo(coach_id)        
         
         if resultado["success"]:
             atletas = resultado["atletas"]
@@ -1972,19 +2205,37 @@ class GimnasioApp:
                 atletas_frame.pack(fill='both', expand=True, pady=(0, 15))
                 
                 # Crear treeview para atletas
-                columns = ('Atleta', 'Email', 'Fecha Asignación', 'Estado')
+                columns = ('Atleta', 'Email', 'Cédula', 'Fecha Inscripción', 'Metas', 'Valoraciones', 'Solvencia', 'Estado')
                 atletas_tree = ttk.Treeview(atletas_frame, columns=columns, show='headings', height=10)
                 
-                for col in columns:
+                column_configs = {
+                    'Atleta': 130,
+                    'Email': 150,
+                    'Cédula': 80,
+                    'Fecha Inscripción': 100,
+                    'Metas': 200,
+                    'Valoraciones': 150,
+                    'Solvencia': 80,
+                    'Estado': 80
+                }
+                
+
+                for col, width in column_configs.items():
                     atletas_tree.heading(col, text=col)
-                    atletas_tree.column(col, width=150)
+                    atletas_tree.column(col, width=width)
                 
                 for atleta in atletas:
                     estado = "🟢 Activo" if atleta['estado_activo'] else "🔴 Finalizado"
+                    solvencia = "💚 Solvente" if atleta['estado_solvencia'] == 'solvente' else "⚠️ Vencido"
+                    
                     atletas_tree.insert('', 'end', values=(
                         atleta['nombre_completo'],
                         atleta['email'],
-                        atleta['fecha_asignacion'],
+                        atleta['cedula'],
+                        atleta['fecha_inscripcion'],
+                        atleta['meta_largo_plazo'][:50] + "..." if len(str(atleta['meta_largo_plazo'])) > 50 else atleta['meta_largo_plazo'],
+                        atleta['valoracion_especiales'][:40] + "..." if len(str(atleta['valoracion_especiales'])) > 40 else atleta['valoracion_especiales'],
+                        solvencia,
                         estado
                     ))
                 
@@ -2006,8 +2257,7 @@ class GimnasioApp:
         usuario_data = self.coach_seleccionado['usuario_data']
         coach_id = coach_data[0]
         
-        # Generar reporte
-        resultado = self.coach_controller.generar_reporte_coach(coach_id)
+        resultado = self._generar_reporte_coach_directo(coach_id)
         
         if resultado["success"]:
             reporte = resultado["reporte"]
@@ -2073,6 +2323,65 @@ class GimnasioApp:
             messagebox.showerror("Error", f"Error al cargar coaches:\n{e}")
 
 
+    def _obtener_atletas_por_coach_directo(self, coach_id):
+        """Obtiene atletas asignados a un coach específico"""
+        try:
+            from controllers.atleta_controller import AtletaController
+            atleta_controller = AtletaController()
+            
+            resultado = atleta_controller.obtener_todos_atletas()
+            if not resultado["success"]:
+                return {"success": False, "atletas": []}
+            
+            atletas_del_coach = []
+            
+            for atleta_completo in resultado["atletas"]:
+                atleta_data = atleta_completo['atleta_data']
+                usuario_data = atleta_completo['usuario_data']
+                
+                coach_atleta_id = atleta_data[8] if len(atleta_data) > 8 else None
+                
+                if coach_atleta_id == coach_id:
+                    atletas_del_coach.append({
+                        'nombre_completo': f"{usuario_data[1]} {usuario_data[2]}",
+                        'email': usuario_data[6],
+                        'cedula': atleta_data[2] if len(atleta_data) > 2 else "N/A",
+                        'fecha_inscripcion': atleta_data[5] if len(atleta_data) > 5 else "N/A",  # fecha_inscripcion (índice 5)
+                        'meta_largo_plazo': atleta_data[9] if len(atleta_data) > 9 else "No especificada",
+                        'valoracion_especiales': atleta_data[10] if len(atleta_data) > 10 else "No especificada",
+                        'estado_solvencia': atleta_data[11] if len(atleta_data) > 11 else "N/A",
+                        'estado_activo': True
+                    })
+            
+            return {"success": True, "atletas": atletas_del_coach}
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            return {"success": False, "atletas": []}
+
+    def _generar_reporte_coach_directo(self, coach_id):
+        """Genera reporte del coach usando datos directos"""
+        try:
+            # Contar atletas
+            atletas_actuales = self.contar_atletas_asignados(coach_id)
+            
+            # Obtener info del coach
+            coach_data = self.coach_seleccionado['coach_data']
+            usuario_data = self.coach_seleccionado['usuario_data']
+            
+            reporte = {
+                "estadisticas": {
+                    "atletas_actuales": atletas_actuales,
+                    "total_atletas_historico": atletas_actuales,  
+                    "tiempo_promedio_asignacion_dias": 0  
+                }
+            }
+            
+            return {"success": True, "reporte": reporte}
+            
+        except Exception as e:
+            return {"success": False, "message": f"Error: {e}"}
+
     def crear_tabla_coaches(self):
         """Crea la tabla de coaches con Treeview"""
         # Frame para la tabla
@@ -2112,14 +2421,11 @@ class GimnasioApp:
 
     def actualizar_tabla_coaches(self, coaches_filtrados=None):
         """Actualiza la tabla con los coaches"""
-        # Limpiar tabla
         for item in self.coaches_tree.get_children():
             self.coaches_tree.delete(item)
         
-        # Usar coaches filtrados o todos
         coaches = coaches_filtrados if coaches_filtrados is not None else self.coaches_data
         
-        # Llenar tabla
         for coach_completo in coaches:
             try:
                 coach_data = coach_completo['coach_data']
@@ -2133,7 +2439,7 @@ class GimnasioApp:
                 salario = f"${coach_data[5]:.2f}" if coach_data[5] else "$0.00"
                 
                 # Contar atletas asignados
-                atletas_asignados = self.coach_controller.contar_atletas_asignados(coach_id)
+                atletas_asignados = self.contar_atletas_asignados(coach_id)
                 
                 # Fecha de contratación
                 try:
@@ -2160,6 +2466,42 @@ class GimnasioApp:
                 print(f"Error procesando coach: {e}")
                 continue
 
+    def contar_atletas_asignados(self, coach_id):
+        """Cuenta cuántos atletas tiene asignados un coach"""
+        try:
+            print(f"🔍 DEBUG: Buscando atletas para coach_id: {coach_id} (tipo: {type(coach_id)})")
+            
+            # Obtener todos los atletas
+            resultado = self.atleta_controller.obtener_todos_atletas()
+            print(f"🔍 DEBUG: Resultado obtener_todos_atletas: {resultado['success']}")
+            
+            if not resultado["success"]:
+                return 0
+            
+            print(f"🔍 DEBUG: Total atletas encontrados: {len(resultado['atletas'])}")
+            
+            # Contar atletas con este coach
+            contador = 0
+            for i, atleta_completo in enumerate(resultado["atletas"]):
+                atleta_data = atleta_completo['atleta_data']
+                print(f"🔍 DEBUG: Atleta {i}: {atleta_data}")
+                
+                coach_atleta_id = atleta_data[8] if len(atleta_data) > 8 else None
+                print(f"🔍 DEBUG: coach_atleta_id: {coach_atleta_id} (tipo: {type(coach_atleta_id)})")
+                
+                if coach_atleta_id == coach_id:
+                    print(f"✅ MATCH: Atleta {i} pertenece al coach {coach_id}")
+                    contador += 1
+                else:
+                    print(f"❌ NO MATCH: {coach_atleta_id} != {coach_id}")
+            
+            print(f"🔍 DEBUG: Contador final: {contador}")
+            return contador
+            
+        except Exception as e:
+            print(f"Error contando atletas: {e}")
+            return 0
+    
     def filtrar_coaches(self, *args):
         """Filtra coaches según búsqueda"""
         search_text = self.search_coaches_var.get().lower()
@@ -2186,6 +2528,7 @@ class GimnasioApp:
                 continue
         
         self.actualizar_tabla_coaches(coaches_filtrados)
+    
     # ==================== GESTION DE PAGOS ====================       
         
     def abrir_gestion_pagos(self):
@@ -2670,19 +3013,609 @@ class GimnasioApp:
             messagebox.showerror("Error de Formato", "Formato de fecha inválido. Use YYYY-MM-DD")
             return
 
-        # Mostrar loading
         self._mostrar_loading_reporte()
         
-        # Usar after para no bloquear UI
         self.root.after(50, lambda: self._ejecutar_reporte_async(fecha_inicio, fecha_fin))   
 
+    def _ejecutar_reporte_async(self, fecha_inicio, fecha_fin):
+        """Ejecuta el reporte de forma asíncrona"""
+        try:
+            resultado = self.finance_controller.generar_reporte_financiero(fecha_inicio, fecha_fin)
 
+            if not resultado['success']:
+                messagebox.showerror("Error al generar reporte", resultado['message'])
+                return
+
+            reporte = resultado['reporte']
+            resumen = reporte['resumen']
+            desglose_ingresos = reporte['desglose_ingresos']
+            desglose_egresos = reporte['desglose_egresos']
+
+            self.resumen_ingresos_label.config(text=f"Total Ingresos: ${resumen['total_ingresos']:.2f}")
+            self.resumen_egresos_label.config(text=f"Total Egresos: ${resumen['total_egresos']:.2f}")
+            
+            balance_color = 'green' if resumen['balance'] >= 0 else 'red'
+            self.resumen_balance_label.config(text=f"Balance: ${resumen['balance']:.2f}", 
+                                            foreground=balance_color)
+
+            self.reporte_detalles_tree.delete(*self.reporte_detalles_tree.get_children())
+            
+            for tipo, monto in desglose_ingresos.items():
+                tipo_legible = tipo.replace('_', ' ').title()
+                self.reporte_detalles_tree.insert('', 'end', values=("📈 INGRESO", tipo_legible, f"${monto:.2f}"))
+            
+            for tipo, monto in desglose_egresos.items():
+                tipo_legible = tipo.replace('_', ' ').title()
+                self.reporte_detalles_tree.insert('', 'end', values=("📉 EGRESO", tipo_legible, f"${monto:.2f}"))
+
+        except Exception as e:
+            messagebox.showerror("Error Crítico", f"Ocurrió un error al procesar el reporte: {e}")
+            import traceback
+            traceback.print_exc()
+    
      # ==================== OTRA GESTION ====================       
 
-    def abrir_mis_atletas(self):
-        """Abre los atletas del coach"""
-        self.mostrar_modulo_pendiente("👥 MIS ATLETAS", 
-                                     "Módulo para ver y gestionar tus atletas asignados.")
+    def mostrar_mis_atletas_coach(self):
+        """Muestra la vista COMPLETA de atletas para coach - VERSIÓN FINAL"""
+        self.limpiar_area_trabajo()
+        
+        # Variables para el módulo
+        self.mis_atletas_data = []
+        self.mi_atleta_seleccionado = None
+        
+        # PASO 1: Verificar que soy coach y obtener mi coach_id
+        self.coach_actual_id = self._obtener_coach_id_usuario_actual()
+        if not self.coach_actual_id:
+            self._mostrar_error_no_coach()
+            return
+        
+        print(f"✅ Coach ID: {self.coach_actual_id} - Cargando vista completa")
+        
+        # PASO 2: Título del módulo
+        title_frame = ttk.Frame(self.work_frame)
+        title_frame.pack(fill='x', pady=(0, 20))
+        
+        title_label = ttk.Label(
+            title_frame,
+            text="👥 MIS ATLETAS ASIGNADOS",
+            font=('Segoe UI', 18, 'bold')
+        )
+        title_label.pack(side='left')
+        
+        # Botón de actualizar
+        refresh_btn = ttk.Button(
+            title_frame,
+            text="🔄 Actualizar",
+            command=self.cargar_mis_atletas_completo
+        )
+        refresh_btn.pack(side='right')
+        
+        # PASO 3: Frame de controles (usar tu función existente)
+        controls_frame = ttk.Frame(self.work_frame)
+        controls_frame.pack(fill='x', pady=(0, 10))
+        
+        # Filtros (usar tu implementación)
+        self.crear_filtros_mis_atletas(controls_frame)
+        
+        # Botones de acción (usar tu implementación)
+        self.crear_botones_mis_atletas(controls_frame)
+        
+        # PASO 4: Tabla detallada (usar tu implementación)
+        self.crear_tabla_mis_atletas()
+        
+        # PASO 5: Cargar datos iniciales
+        self.cargar_mis_atletas_completo()
+
+    def cargar_mis_atletas_completo(self):
+        """Carga solo los atletas asignados al coach actual - VERSIÓN MEJORADA"""
+        try:
+            if not hasattr(self, 'coach_actual_id') or not self.coach_actual_id:
+                messagebox.showerror("Error", "No se pudo identificar el coach")
+                return
+                
+            print(f"🔄 Cargando atletas del coach ID: {self.coach_actual_id}")
+            
+            # Obtener todos los atletas y filtrar
+            resultado = self.atleta_controller.obtener_todos_atletas()
+            if not resultado["success"]:
+                messagebox.showerror("Error", "No se pudieron cargar los atletas")
+                return
+            
+            # Filtrar solo mis atletas
+            self.mis_atletas_data = []
+            
+            for atleta_completo in resultado["atletas"]:
+                atleta_data = atleta_completo['atleta_data']
+                coach_atleta_id = atleta_data[8] if len(atleta_data) > 8 else None
+                
+                if coach_atleta_id == self.coach_actual_id:
+                    self.mis_atletas_data.append(atleta_completo)
+            
+            print(f"✅ Cargados {len(self.mis_atletas_data)} atletas asignados")
+            self.actualizar_tabla_mis_atletas()
+            
+        except Exception as e:
+            print(f"❌ Error cargando mis atletas: {e}")
+            messagebox.showerror("Error", f"Error al cargar atletas:\n{e}")
+
+
+
+    def ver_progreso_atleta(self):
+        """Muestra el progreso y estadísticas del atleta seleccionado"""
+        if not self.mi_atleta_seleccionado:
+            messagebox.showwarning("Advertencia", "Selecciona un atleta")
+            return
+        
+        atleta_data = self.mi_atleta_seleccionado['atleta_data']
+        usuario_data = self.mi_atleta_seleccionado['usuario_data']
+        
+        # Ventana modal para mostrar progreso
+        progreso_window = tk.Toplevel(self.root)
+        progreso_window.title(f"Progreso de {usuario_data[1]} {usuario_data[2]}")
+        progreso_window.geometry("700x600")
+        progreso_window.transient(self.root)
+        
+        main_frame = ttk.Frame(progreso_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        # Título
+        ttk.Label(main_frame, 
+                text=f"📊 PROGRESO DE {usuario_data[1]} {usuario_data[2]}", 
+                font=('Segoe UI', 16, 'bold')).pack(pady=(0, 20))
+        
+        # Información básica de progreso
+        info_frame = ttk.LabelFrame(main_frame, text="Información General", padding=15)
+        info_frame.pack(fill='x', pady=(0, 15))
+        
+        # Calcular días en el gimnasio
+        try:
+            if len(atleta_data) > 5 and atleta_data[5]:  # fecha_inscripcion
+                from datetime import datetime, date
+                if isinstance(atleta_data[5], str):
+                    fecha_inscripcion = datetime.strptime(atleta_data[5][:10], '%Y-%m-%d').date()
+                else:
+                    fecha_inscripcion = atleta_data[5]
+                
+                dias_en_gym = (date.today() - fecha_inscripcion).days
+                
+                # Fecha de vencimiento
+                if len(atleta_data) > 6 and atleta_data[6]:
+                    if isinstance(atleta_data[6], str):
+                        fecha_venc = datetime.strptime(atleta_data[6][:10], '%Y-%m-%d').date()
+                    else:
+                        fecha_venc = atleta_data[6]
+                    
+                    dias_restantes = (fecha_venc - date.today()).days
+                else:
+                    dias_restantes = 0
+            else:
+                dias_en_gym = 0
+                dias_restantes = 0
+        except:
+            dias_en_gym = 0
+            dias_restantes = 0
+        
+        # Mostrar estadísticas básicas
+        estadisticas_basicas = [
+            f"📅 Días en el gimnasio: {dias_en_gym} días",
+            f"⏰ Días restantes de membresía: {dias_restantes} días",
+            f"💪 Peso actual: {atleta_data[3]} kg" if len(atleta_data) > 3 and atleta_data[3] else "💪 Peso: No registrado",
+            f"🎯 Estado de solvencia: {atleta_data[11] if len(atleta_data) > 11 else 'No especificado'}",
+            f"📋 Plan actual: Plan {atleta_data[7]}" if len(atleta_data) > 7 and atleta_data[7] else "📋 Plan: No asignado"
+        ]
+        
+        for stat in estadisticas_basicas:
+            ttk.Label(info_frame, text=stat, font=('Segoe UI', 10)).pack(anchor='w', pady=2)
+        
+        # Metas y observaciones del atleta
+        metas_frame = ttk.LabelFrame(main_frame, text="Metas y Seguimiento", padding=15)
+        metas_frame.pack(fill='both', expand=True, pady=(0, 15))
+        
+        # Meta a largo plazo
+        ttk.Label(metas_frame, text="🎯 Meta a Largo Plazo:", font=('Segoe UI', 11, 'bold')).pack(anchor='w')
+        meta_text = tk.Text(metas_frame, height=3, wrap=tk.WORD, state='disabled')
+        meta_text.pack(fill='x', pady=(5, 10))
+        
+        meta = atleta_data[9] if len(atleta_data) > 9 and atleta_data[9] else "No se ha establecido una meta específica"
+        meta_text.config(state='normal')
+        meta_text.insert('1.0', meta)
+        meta_text.config(state='disabled')
+        
+        # Observaciones médicas/especiales
+        ttk.Label(metas_frame, text="🩺 Observaciones Médicas:", font=('Segoe UI', 11, 'bold')).pack(anchor='w')
+        obs_text = tk.Text(metas_frame, height=3, wrap=tk.WORD, state='disabled')
+        obs_text.pack(fill='x', pady=(5, 10))
+        
+        observaciones = atleta_data[10] if len(atleta_data) > 10 and atleta_data[10] else "Sin observaciones médicas especiales"
+        obs_text.config(state='normal')
+        obs_text.insert('1.0', observaciones)
+        obs_text.config(state='disabled')
+        
+        # Sección para notas del coach (futura implementación)
+        notas_frame = ttk.LabelFrame(main_frame, text="📝 Notas del Coach", padding=15)
+        notas_frame.pack(fill='x', pady=(0, 15))
+        
+        ttk.Label(notas_frame, 
+                text="💡 Próximamente: Aquí podrás agregar y ver tus notas sobre el progreso del atleta", 
+                font=('Segoe UI', 9), foreground='gray').pack()
+        
+        # Botones de acción
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(fill='x')
+        
+        # Botón para agregar nota (futuro)
+        ttk.Button(buttons_frame, 
+                text="📝 Agregar Nota de Progreso", 
+                state='disabled',
+                command=lambda: messagebox.showinfo("Próximamente", "Función en desarrollo")).pack(side='left')
+        
+        ttk.Button(buttons_frame, text="Cerrar", command=progreso_window.destroy).pack(side='right')
+    # ==================== MÉTODOS DE SOPORTE ====================
+
+    def _obtener_coach_id_usuario_actual(self):
+        """Obtiene el coach_id del usuario actual - VERSIÓN CON MÁS DEBUG"""
+        try:
+            print(f"🔍 DEBUG: Buscando coach_id para usuario: {self.usuario_actual['id']} ({self.usuario_actual['nombre']})")
+            
+            # Obtener coaches directamente del modelo
+            coaches = self.coach_controller.coach_model.read_coaches()
+            
+            print(f"🔍 DEBUG: Total coaches en BD: {len(coaches) if coaches else 0}")
+            
+            if coaches:
+                for coach in coaches:
+                    coach_id = coach[0]      # id_coach
+                    user_id = coach[1]       # id_usuario
+                    
+                    print(f"🔍 DEBUG: Coach {coach_id} -> Usuario {user_id}")
+                    
+                    if user_id == self.usuario_actual['id']:
+                        print(f"✅ MATCH: Coach ID {coach_id} para usuario {user_id}")
+                        return coach_id
+            
+            print(f"❌ NO MATCH: Usuario {self.usuario_actual['id']} no es coach o no está en la tabla coaches")
+            return None
+            
+        except Exception as e:
+            print(f"❌ ERROR en _obtener_coach_id_usuario_actual: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+        
+    def cargar_mis_atletas(self):
+        """Redirige al método principal"""
+        self.mostrar_mis_atletas_coach()
+
+    def _mostrar_error_no_coach(self):
+        """Muestra error cuando no se puede encontrar el coach - MEJORADO"""
+        error_frame = ttk.Frame(self.work_frame)
+        error_frame.pack(expand=True)
+        
+        ttk.Label(error_frame, text="❌", font=('Segoe UI', 48)).pack(pady=(50, 20))
+        
+        ttk.Label(error_frame,
+                text="Error de Acceso",
+                font=('Segoe UI', 18, 'bold')).pack(pady=(0, 10))
+        
+        ttk.Label(error_frame,
+                text="No se pudo encontrar tu perfil de coach en el sistema.\n\nPosibles causas:\n• Tu usuario no está registrado como coach\n• Hay un problema con la base de datos\n\nContacta al administrador para resolver este problema.",
+                font=('Segoe UI', 12),
+                justify='center').pack(pady=(0, 30))
+        
+        ttk.Button(error_frame,
+                text="🏠 Volver al Dashboard",
+                command=self.mostrar_dashboard_resumen).pack()
+
+    def crear_filtros_mis_atletas(self, parent):
+        """Crea filtros básicos de búsqueda (solo lectura)"""
+        search_frame = ttk.Frame(parent)
+        search_frame.pack(side='left', fill='x', expand=True)
+        
+        # Búsqueda por texto
+        ttk.Label(search_frame, text="🔍 Buscar atleta:").pack(side='left', padx=(0, 5))
+        
+        self.search_mis_atletas_var = tk.StringVar()
+        self.search_mis_atletas_entry = ttk.Entry(search_frame, textvariable=self.search_mis_atletas_var, width=25)
+        self.search_mis_atletas_entry.pack(side='left', padx=(0, 10))
+        self.search_mis_atletas_var.trace('w', self.filtrar_mis_atletas)
+        
+        # Filtro por estado de solvencia
+        ttk.Label(search_frame, text="💰 Estado:").pack(side='left', padx=(10, 5))
+        
+        self.estado_mis_atletas_var = tk.StringVar(value="Todos")
+        estado_combo = ttk.Combobox(
+            search_frame, 
+            textvariable=self.estado_mis_atletas_var,
+            values=["Todos", "solvente", "vencido", "suspendido"],
+            state="readonly",
+            width=12
+        )
+        estado_combo.pack(side='left')
+        estado_combo.bind('<<ComboboxSelected>>', self.filtrar_mis_atletas)
+
+    def crear_botones_mis_atletas(self, parent):
+        """Crea botones de solo lectura para coach"""
+        buttons_frame = ttk.Frame(parent)
+        buttons_frame.pack(side='right')
+        
+        # Solo botones de visualización, NO de edición
+        self.ver_perfil_btn = ttk.Button(
+            buttons_frame,
+            text="👁️ Ver Perfil Completo",
+            command=self.ver_perfil_atleta_completo,
+            state='disabled'
+        )
+        self.ver_perfil_btn.pack(side='left', padx=2)
+        
+        self.ver_progreso_btn = ttk.Button(
+            buttons_frame,
+            text="📊 Ver Progreso",
+            command=self.ver_progreso_atleta,
+            state='disabled'
+        )
+        self.ver_progreso_btn.pack(side='left', padx=2)
+
+    def crear_tabla_mis_atletas(self):
+        """Crea la tabla de mis atletas (solo lectura)"""
+        table_frame = ttk.Frame(self.work_frame)
+        table_frame.pack(fill='both', expand=True, pady=10)
+        
+        # Configurar Treeview - columnas optimizadas para coach
+        columns = ('Nombre', 'Apellido', 'Cédula', 'Email', 'Plan', 'Estado', 'Vencimiento', 'Días Restantes')
+        self.mis_atletas_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
+        
+        # Configurar encabezados
+        column_configs = {
+            'Nombre': 120,
+            'Apellido': 120, 
+            'Cédula': 100,
+            'Email': 180,
+            'Plan': 100,
+            'Estado': 100,
+            'Vencimiento': 110,
+            'Días Restantes': 120
+        }
+        
+        for col, width in column_configs.items():
+            self.mis_atletas_tree.heading(col, text=col)
+            self.mis_atletas_tree.column(col, width=width, anchor='center' if col in ['Estado', 'Días Restantes'] else 'w')
+        
+        # Scrollbars
+        v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.mis_atletas_tree.yview)
+        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.mis_atletas_tree.xview)
+        self.mis_atletas_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        
+        # Empaquetar
+        self.mis_atletas_tree.pack(side='left', fill='both', expand=True)
+        v_scrollbar.pack(side='right', fill='y')
+        h_scrollbar.pack(side='bottom', fill='x')
+        
+        self.mis_atletas_tree.bind('<<TreeviewSelect>>', self.on_mi_atleta_selected)
+
+    
+    def actualizar_tabla_mis_atletas(self, atletas_filtrados=None):
+        """Actualiza la tabla con mis atletas"""
+        # Limpiar tabla
+        for item in self.mis_atletas_tree.get_children():
+            self.mis_atletas_tree.delete(item)
+        
+        # Usar atletas filtrados o todos
+        atletas = atletas_filtrados if atletas_filtrados is not None else self.mis_atletas_data
+        
+        # Si no hay atletas, mostrar mensaje
+        if not atletas:
+            self.mis_atletas_tree.insert('', 'end', values=(
+                "No tienes atletas", "asignados", "actualmente", "", "", "", "", ""
+            ))
+            return
+        
+        # Llenar tabla
+        for atleta_completo in atletas:
+            try:
+                atleta_data = atleta_completo['atleta_data']
+                usuario_data = atleta_completo['usuario_data']
+                
+                nombre = usuario_data[1]
+                apellido = usuario_data[2]
+                cedula = atleta_data[2] if len(atleta_data) > 2 else "N/A"
+                email = usuario_data[6]
+                
+                # Obtener nombre del plan (simplificado)
+                plan_id = atleta_data[7] if len(atleta_data) > 7 else None
+                plan_nombre = f"Plan {plan_id}" if plan_id else "Sin Plan"
+                
+                # Estado de solvencia
+                estado = atleta_data[11] if len(atleta_data) > 11 else "N/A"
+                
+                # Fecha de vencimiento y días restantes
+                try:
+                    if len(atleta_data) > 6 and atleta_data[6]:
+                        from datetime import datetime, date
+                        if isinstance(atleta_data[6], str):
+                            fecha_venc = datetime.strptime(atleta_data[6][:10], '%Y-%m-%d').date()
+                        else:
+                            fecha_venc = atleta_data[6]
+                        
+                        # Calcular días restantes
+                        dias_restantes = (fecha_venc - date.today()).days
+                        vencimiento = str(fecha_venc)
+                        
+                        if dias_restantes < 0:
+                            dias_texto = f"Vencido hace {abs(dias_restantes)} días"
+                        elif dias_restantes == 0:
+                            dias_texto = "Vence HOY"
+                        else:
+                            dias_texto = f"{dias_restantes} días"
+                    else:
+                        vencimiento = "N/A"
+                        dias_texto = "N/A"
+                except:
+                    vencimiento = "N/A"
+                    dias_texto = "N/A"
+                
+                # Insertar fila
+                item = self.mis_atletas_tree.insert('', 'end', values=(
+                    nombre, apellido, cedula, email, plan_nombre, estado, vencimiento, dias_texto
+                ))
+                
+                # Colorear según estado
+                if estado == 'vencido' or (dias_texto != "N/A" and "Vencido" in dias_texto):
+                    self.mis_atletas_tree.set(item, 'Estado', '🔴 Vencido')
+                elif estado == 'suspendido':
+                    self.mis_atletas_tree.set(item, 'Estado', '⏸️ Suspendido')
+                elif dias_texto != "N/A" and "Vence HOY" in dias_texto:
+                    self.mis_atletas_tree.set(item, 'Estado', '⚠️ Vence Hoy')
+                else:
+                    self.mis_atletas_tree.set(item, 'Estado', '🟢 Solvente')
+                    
+            except Exception as e:
+                print(f"Error procesando atleta: {e}")
+                continue
+
+    def filtrar_mis_atletas(self, *args):
+        """Filtra mis atletas según búsqueda y estado"""
+        search_text = self.search_mis_atletas_var.get().lower()
+        estado_filter = self.estado_mis_atletas_var.get()
+        
+        if not search_text and estado_filter == "Todos":
+            self.actualizar_tabla_mis_atletas()
+            return
+        
+        atletas_filtrados = []
+        
+        for atleta_completo in self.mis_atletas_data:
+            try:
+                atleta_data = atleta_completo['atleta_data']
+                usuario_data = atleta_completo['usuario_data']
+                
+                # Filtro de texto
+                texto_busqueda = f"{usuario_data[1]} {usuario_data[2]} {atleta_data[2]} {usuario_data[6]}".lower()
+                if search_text and search_text not in texto_busqueda:
+                    continue
+                
+                # Filtro de estado
+                if estado_filter != "Todos":
+                    estado_atleta = atleta_data[11] if len(atleta_data) > 11 else "N/A"
+                    if estado_atleta != estado_filter:
+                        continue
+                
+                atletas_filtrados.append(atleta_completo)
+                
+            except Exception as e:
+                print(f"Error filtrando atleta: {e}")
+                continue
+        
+        self.actualizar_tabla_mis_atletas(atletas_filtrados)
+
+    def on_mi_atleta_selected(self, event):
+        """Maneja la selección de atleta en la tabla"""
+        selection = self.mis_atletas_tree.selection()
+        if selection:
+            # Habilitar botones de solo lectura
+            self.ver_perfil_btn.config(state='normal')
+            self.ver_progreso_btn.config(state='normal')
+            
+            # Obtener atleta seleccionado
+            item = self.mis_atletas_tree.item(selection[0])
+            nombre_completo = f"{item['values'][0]} {item['values'][1]}"
+            
+            # Buscar atleta completo en los datos
+            for atleta_completo in self.mis_atletas_data:
+                usuario_data = atleta_completo['usuario_data']
+                if f"{usuario_data[1]} {usuario_data[2]}" == nombre_completo:
+                    self.mi_atleta_seleccionado = atleta_completo
+                    break
+        else:
+            # Deshabilitar botones
+            self.ver_perfil_btn.config(state='disabled')
+            self.ver_progreso_btn.config(state='disabled')
+            self.mi_atleta_seleccionado = None
+
+    def ver_perfil_atleta_completo(self):
+        """Muestra el perfil completo del atleta (solo lectura)"""
+        if not self.mi_atleta_seleccionado:
+            messagebox.showwarning("Advertencia", "Selecciona un atleta")
+            return
+        
+        atleta_data = self.mi_atleta_seleccionado['atleta_data']
+        usuario_data = self.mi_atleta_seleccionado['usuario_data']
+        
+        # Ventana modal para mostrar perfil
+        perfil_window = tk.Toplevel(self.root)
+        perfil_window.title(f"Perfil de {usuario_data[1]} {usuario_data[2]}")
+        perfil_window.geometry("600x700")
+        perfil_window.transient(self.root)
+        
+        main_frame = ttk.Frame(perfil_window, padding=20)
+        main_frame.pack(fill='both', expand=True)
+        
+        # Título
+        ttk.Label(main_frame, 
+                text=f"👤 PERFIL DE {usuario_data[1]} {usuario_data[2]}", 
+                font=('Segoe UI', 16, 'bold')).pack(pady=(0, 20))
+        
+        # Datos personales
+        personal_frame = ttk.LabelFrame(main_frame, text="Datos Personales", padding=15)
+        personal_frame.pack(fill='x', pady=(0, 15))
+        
+        datos_personales = [
+            ("Nombre Completo:", f"{usuario_data[1]} {usuario_data[2]}"),
+            ("Cédula:", atleta_data[2] if len(atleta_data) > 2 else "No especificada"),
+            ("Email:", usuario_data[6]),
+            ("Teléfono:", usuario_data[5] if usuario_data[5] else "No especificado"),
+            ("Dirección:", usuario_data[4] if usuario_data[4] else "No especificada"),
+            ("Edad:", usuario_data[3] if usuario_data[3] else "No especificada"),
+        ]
+        
+        for label, valor in datos_personales:
+            info_frame = ttk.Frame(personal_frame)
+            info_frame.pack(fill='x', pady=2)
+            ttk.Label(info_frame, text=label, font=('Segoe UI', 10, 'bold')).pack(side='left')
+            ttk.Label(info_frame, text=str(valor)).pack(side='left', padx=(10, 0))
+        
+        # Datos deportivos
+        deportivo_frame = ttk.LabelFrame(main_frame, text="Información Deportiva", padding=15)
+        deportivo_frame.pack(fill='x', pady=(0, 15))
+        
+        datos_deportivos = [
+            ("Peso:", f"{atleta_data[3]} kg" if len(atleta_data) > 3 and atleta_data[3] else "No especificado"),
+            ("Fecha Nacimiento:", str(atleta_data[4]) if len(atleta_data) > 4 and atleta_data[4] else "No especificada"),
+            ("Fecha Inscripción:", str(atleta_data[5]) if len(atleta_data) > 5 and atleta_data[5] else "No especificada"),
+            ("Estado Solvencia:", atleta_data[11] if len(atleta_data) > 11 else "No especificado"),
+        ]
+        
+        for label, valor in datos_deportivos:
+            info_frame = ttk.Frame(deportivo_frame)
+            info_frame.pack(fill='x', pady=2)
+            ttk.Label(info_frame, text=label, font=('Segoe UI', 10, 'bold')).pack(side='left')
+            ttk.Label(info_frame, text=str(valor)).pack(side='left', padx=(10, 0))
+        
+        # Metas y observaciones
+        metas_frame = ttk.LabelFrame(main_frame, text="Metas y Observaciones", padding=15)
+        metas_frame.pack(fill='both', expand=True, pady=(0, 15))
+        
+        # Meta a largo plazo
+        ttk.Label(metas_frame, text="Meta a Largo Plazo:", font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+        meta_text = tk.Text(metas_frame, height=3, wrap=tk.WORD, state='disabled')
+        meta_text.pack(fill='x', pady=(5, 10))
+        
+        meta = atleta_data[9] if len(atleta_data) > 9 and atleta_data[9] else "No especificada"
+        meta_text.config(state='normal')
+        meta_text.insert('1.0', meta)
+        meta_text.config(state='disabled')
+        
+        # Valoraciones especiales
+        ttk.Label(metas_frame, text="Observaciones Médicas:", font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+        obs_text = tk.Text(metas_frame, height=3, wrap=tk.WORD, state='disabled')
+        obs_text.pack(fill='x', pady=(5, 0))
+        
+        observaciones = atleta_data[10] if len(atleta_data) > 10 and atleta_data[10] else "Ninguna"
+        obs_text.config(state='normal')
+        obs_text.insert('1.0', observaciones)
+        obs_text.config(state='disabled')
+        
+        # Botón cerrar
+        ttk.Button(main_frame, text="Cerrar", command=perfil_window.destroy).pack(pady=15)
     
     def abrir_asignaciones(self):
         """Abre las asignaciones del coach"""

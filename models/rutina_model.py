@@ -170,10 +170,8 @@ class RutinaModel:
             self.db.connect()
             cursor = self.db.connection.cursor()
             
-            # Primero eliminar ejercicios asociados
             cursor.execute("DELETE FROM `rutina_ejercicios` WHERE `id_rutina`=%s", (id_rutina,))
             
-            # Luego eliminar la rutina
             cursor.execute("DELETE FROM `rutinas` WHERE `id_rutina`=%s", (id_rutina,))
             
             self.db.connection.commit()

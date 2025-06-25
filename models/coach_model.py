@@ -88,3 +88,34 @@ class CoachModel:
             if cursor:
                 cursor.close()
             self.db.disconnect()
+
+    def get_coaches_disponibles(self):
+        """Obtiene coaches con información completa para asignaciones"""
+        try:
+            self.db.connect()
+            cursor = self.db.connection.cursor()
+            cursor.execute("""
+                SELECT 
+                    c.id_coach,
+                    c.id_usuario,
+                    u.nombre,
+                    u.apellido,
+                    CONCAT(u.nombre, ' ', u.apellido) as nombre_completo,
+                    c.especialidades,
+                    c.horario_disponible,
+                    u.estado_activo
+                FROM coaches c
+                INNER JOIN usuarios u ON c.id_usuario = u.id
+                WHERE u.estado_activo = 1
+                ORDER BY u.nombre, u.apellido
+            """)
+            return cursor.fetchall()
+
+        except mysql.connector.Error as error:
+            print(f"Error al obtener coaches disponibles: {error}")
+            return []
+
+        finally:
+            if cursor:
+                cursor.close()
+            self.db.disconnect()

@@ -15,6 +15,7 @@ class CoachController:
         self.usuario_model = UsuarioModel()
         self.atleta_model = AtletaModel()
         self.user_controller = UserController()
+        
     
     # ==================== GESTIÓN DE COACHES ====================
     
@@ -474,15 +475,39 @@ class CoachController:
     # ==================== MÉTODOS DE UTILIDAD ====================
     
     def contar_atletas_asignados(self, coach_id):
-        """Cuenta atletas actualmente asignados a un coach"""
+        """Cuenta cuántos atletas tiene asignados un coach"""
         try:
-            asignaciones = self.asignacion_model.read_asignaciones()
-            count = 0
-            for asignacion in asignaciones:
-                if asignacion[1] == coach_id and asignacion[5]:  # id_coach y estado_activo
-                    count += 1
-            return count
-        except Exception:
+            print(f"🔍 DEBUG: Buscando atletas para coach_id: {coach_id} (tipo: {type(coach_id)})")
+            
+            # Obtener todos los atletas
+            resultado = self.atleta_controller.obtener_todos_atletas()
+            print(f"🔍 DEBUG: Resultado obtener_todos_atletas: {resultado['success']}")
+            
+            if not resultado["success"]:
+                return 0
+            
+            print(f"🔍 DEBUG: Total atletas encontrados: {len(resultado['atletas'])}")
+            
+            # Contar atletas con este coach
+            contador = 0
+            for i, atleta_completo in enumerate(resultado["atletas"]):
+                atleta_data = atleta_completo['atleta_data']
+                print(f"🔍 DEBUG: Atleta {i}: {atleta_data}")
+                
+                coach_atleta_id = atleta_data[8] if len(atleta_data) > 8 else None
+                print(f"🔍 DEBUG: coach_atleta_id: {coach_atleta_id} (tipo: {type(coach_atleta_id)})")
+                
+                if coach_atleta_id == coach_id:
+                    print(f"✅ MATCH: Atleta {i} pertenece al coach {coach_id}")
+                    contador += 1
+                else:
+                    print(f"❌ NO MATCH: {coach_atleta_id} != {coach_id}")
+            
+            print(f"🔍 DEBUG: Contador final: {contador}")
+            return contador
+            
+        except Exception as e:
+            print(f"Error contando atletas: {e}")
             return 0
     
     def _puede_crear_coaches(self, user_id):
