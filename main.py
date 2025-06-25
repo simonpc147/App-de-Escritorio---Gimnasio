@@ -2676,6 +2676,7 @@ class GimnasioApp:
         # Usar after para no bloquear UI
         self.root.after(50, lambda: self._ejecutar_reporte_async(fecha_inicio, fecha_fin))   
 
+
      # ==================== OTRA GESTION ====================       
 
     def abrir_mis_atletas(self):

@@ -13,9 +13,9 @@ class AuthController:
         self.usuario_model = UsuarioModel()
         # Almacén de sesiones en memoria (en producción usar Redis/Base de datos)
         self.sesiones_activas = {}
-        self.tiempo_expiracion = 3600  # 1 hora en segundos
-        self.intentos_fallidos = {}  # Control de intentos fallidos
-        self.tiempo_bloqueo = 300  # 5 minutos de bloqueo tras intentos fallidos
+        self.tiempo_expiracion = 3600  
+        self.intentos_fallidos = {}
+        self.tiempo_bloqueo = 300  
     
     # ==================== SISTEMA DE LOGIN ====================
   
@@ -439,8 +439,6 @@ class AuthController:
             "usuario": validacion["usuario"]
         }
 
-    # MODIFICA TU AuthController - añade este método de debug temporal
-
     def iniciar_sesion_debug(self, email, password, ip_cliente=""):
         """MÉTODO DE DEBUG - USA ESTE TEMPORALMENTE"""
         print(f"\n🔍 === DEBUG LOGIN AuthController ===")
@@ -504,7 +502,6 @@ class AuthController:
             traceback.print_exc()
             return {"success": False, "message": f"Error interno: {str(e)}"}
 
-    # TAMBIÉN MODIFICA TU MÉTODO ORIGINAL para usar el debug:
     def iniciar_sesion(self, email, password, ip_cliente=""):
         """TEMPORALMENTE USA EL DEBUG"""
         return self.iniciar_sesion_debug(email, password, ip_cliente)
