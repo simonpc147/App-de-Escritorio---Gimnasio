@@ -41,24 +41,25 @@ class GimnasioApp:
         self.inicializar_aplicacion()
         
     
+    
     def configurar_estilos(self):
-        """Configura estilos globales de la aplicación - ATHENA STYLE"""
+        """Configura estilos globales de la aplicación - ATHENA STYLE COMPLETO"""
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Colores del sistema Athena
+        # Colores del sistema Athena (mantener los mismos)
         self.colores = {
-            'primary_green': '#B8E000',     # Verde lima principal
-            'primary_purple': '#8B5CF6',    # Púrpura principal  
-            'dark_purple': '#6B46C1',       # Púrpura oscuro
-            'accent_lime': '#84CC16',       # Verde lima acento
-            'dark_bg': '#0F0F23',           # Fondo oscuro
-            'card_bg': '#1A1A2E',           # Fondo de tarjetas
-            'text_primary': '#FFFFFF',      # Texto principal
-            'text_secondary': '#94A3B8',    # Texto secundario
-            'border_color': '#8B5CF633',    # Color de bordes (con alpha)
-            'hover_bg': '#B8E01A',          # Fondo hover
-            'shadow_color': '#8B5CF64D',    # Color de sombras
+            'primary_green': '#B8E000',     
+            'primary_purple': '#8B5CF6',    
+            'dark_purple': '#6B46C1',       
+            'accent_lime': '#84CC16',       
+            'dark_bg': '#FFFFFF',           
+            'card_bg': '#FFFFFF',           
+            'text_primary': '#0F0F23',     
+            'text_secondary': '#FFFFFF',   
+            'border_color': '#8B5CF633',   
+            'hover_bg': '#B8E01A',          
+            'shadow_color': '#8B5CF64D',    
             'success': '#10b981',
             'warning': '#f59e0b', 
             'error': '#ef4444'
@@ -67,17 +68,34 @@ class GimnasioApp:
         # Configurar la ventana principal
         self.root.configure(bg=self.colores['dark_bg'])
         
-        # Estilo para frames principales
+        # ===== ESTILOS BÁSICOS NECESARIOS =====
+        
+        # Configuraciones básicas para widgets principales
+        self.style.configure('TFrame', 
+                             background=self.colores['card_bg'], 
+                             relief='flat',
+                             borderwidth=0)
+
+
+        self.style.configure('TLabel', 
+                            background=self.colores['card_bg'], 
+                            foreground=self.colores['text_primary'])
+        self.style.configure('TButton', font=('Segoe UI', 10))
+        
+        # ===== ESTILOS PARA FRAMES =====
+        
         self.style.configure('Main.TFrame', 
                             background=self.colores['dark_bg'],
-                            relief='flat')
+                            relief='flat',
+                            borderwidth=0)
         
         self.style.configure('Card.TFrame',
                             background=self.colores['card_bg'],
-                            relief='raised',
-                            borderwidth=1)
+                            relief='flat',
+                            borderwidth=0)
         
-        # Estilo para labels del header
+        # ===== ESTILOS PARA LABELS =====
+        
         self.style.configure('Header.TLabel',
                             background=self.colores['card_bg'],
                             foreground=self.colores['text_primary'],
@@ -93,20 +111,24 @@ class GimnasioApp:
                             foreground=self.colores['text_primary'],
                             font=('Segoe UI', 11, 'bold'))
         
-        self.style.configure('UserRole.TLabel',
-                            background=self.colores['primary_purple'],
-                            foreground=self.colores['text_primary'],
-                            font=('Segoe UI', 9),
-                            relief='raised',
-                            borderwidth=1)
+        self.style.configure('Title.TLabel',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['primary_green'],
+                            font=('Segoe UI', 18, 'bold'))
         
-        # Estilo para botones del menú lateral
+        self.style.configure('Info.TLabel',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_secondary'],
+                            font=('Segoe UI', 10))
+        
+        # ===== ESTILOS PARA BOTONES =====
+        
         self.style.configure('Menu.TButton',
                             background=self.colores['card_bg'],
                             foreground=self.colores['text_primary'],
                             font=('Segoe UI', 10, 'normal'),
                             relief='flat',
-                            borderwidth=1,
+                            borderwidth=0,
                             focuscolor='none')
         
         self.style.map('Menu.TButton',
@@ -116,27 +138,27 @@ class GimnasioApp:
                                 ('pressed', self.colores['dark_bg'])],
                     relief=[('pressed', 'sunken')])
         
-        # Estilo para botón activo del menú
         self.style.configure('MenuActive.TButton',
                             background=self.colores['primary_green'],
                             foreground=self.colores['dark_bg'],
                             font=('Segoe UI', 10, 'bold'),
                             relief='raised',
-                            borderwidth=2)
+                            borderwidth=0)
         
-        # Estilo para botón de cerrar sesión
         self.style.configure('Logout.TButton',
                             background='#EF4444',
                             foreground=self.colores['text_primary'],
                             font=('Segoe UI', 10, 'bold'),
                             relief='raised',
-                            borderwidth=1)
+                            borderwidth=0)
         
         self.style.map('Logout.TButton',
                     background=[('active', '#DC2626')],
                     relief=[('pressed', 'sunken')])
         
-        # Estilo para el área de trabajo
+        # ===== ESTILOS CRÍTICOS PARA LABELFRAMES (SOLUCIONAN LOS ERRORES) =====
+        
+        # 🔥 CORRECCIÓN PRINCIPAL: Estilo para el área de trabajo
         self.style.configure('Work.TLabelFrame',
                             background=self.colores['card_bg'],
                             foreground=self.colores['primary_green'],
@@ -144,30 +166,117 @@ class GimnasioApp:
                             relief='raised',
                             borderwidth=2)
         
-        # Estilo para títulos principales
-        self.style.configure('Title.TLabel',
-                            background=self.colores['card_bg'],
-                            foreground=self.colores['primary_green'],
-                            font=('Segoe UI', 18, 'bold'))
-        
-        # Estilo para labels de información
-        self.style.configure('Info.TLabel',
-                            background=self.colores['card_bg'],
-                            foreground=self.colores['text_secondary'],
-                            font=('Segoe UI', 10))
-        
-        # Estilo para separadores
-        self.style.configure('Athena.TSeparator',
-                            background=self.colores['border_color'])
-        
-        # Estilo para LabelFrames de secciones
+        # 🔥 CORRECCIÓN: Estilo para secciones generales
         self.style.configure('Section.TLabelFrame',
                             background=self.colores['card_bg'],
                             foreground=self.colores['primary_purple'],
                             font=('Segoe UI', 11, 'bold'),
                             relief='raised',
                             borderwidth=1)
-    
+        
+        # Estilo alternativo para módulos específicos
+        self.style.configure('Module.TLabelFrame',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['primary_green'],
+                            font=('Segoe UI', 11, 'bold'),
+                            relief='raised',
+                            borderwidth=1)
+        
+        # ===== ESTILOS PARA TREEVIEW =====
+        
+        self.style.configure('Treeview',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            fieldbackground=self.colores['card_bg'],
+                            borderwidth=1,
+                            relief='solid')
+        
+        self.style.configure('Treeview.Heading',
+                            background=self.colores['primary_purple'],
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 10, 'bold'),
+                            relief='raised',
+                            borderwidth=1)
+        
+        self.style.map('Treeview',
+                    background=[('selected', self.colores['primary_green'])],
+                    foreground=[('selected', self.colores['dark_bg'])])
+        
+        # ===== ESTILOS PARA ENTRY Y COMBOBOX =====
+        
+        self.style.configure('TEntry',
+                            fieldbackground=self.colores['card_bg'],
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            borderwidth=1,
+                            relief='solid',
+                            insertcolor=self.colores['primary_green'])
+        
+        self.style.configure('TCombobox',
+                            fieldbackground=self.colores['card_bg'],
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            borderwidth=1,
+                            relief='solid',
+                            arrowcolor=self.colores['primary_green'])
+        
+        # ===== ESTILOS PARA SCROLLBAR =====
+        
+        self.style.configure('TScrollbar',
+                            background=self.colores['card_bg'],
+                            troughcolor=self.colores['dark_bg'],
+                            borderwidth=1,
+                            relief='solid',
+                            arrowcolor=self.colores['primary_green'])
+        
+        # ===== SEPARADORES =====
+        
+        self.style.configure('Athena.TSeparator',
+                            background=self.colores['border_color'])
+        
+        # ===== CHECKBUTTON =====
+        
+        self.style.configure('TCheckbutton',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            focuscolor='none')
+        
+        # ===== RADIOBUTTON =====
+        
+        self.style.configure('TRadiobutton',
+                            background=self.colores['card_bg'],
+                            foreground=self.colores['text_primary'],
+                            focuscolor='none')
+        
+        # ===== PROGRESSBAR =====
+        
+        self.style.configure('TProgressbar',
+                            background=self.colores['primary_green'],
+                            troughcolor=self.colores['dark_bg'],
+                            borderwidth=1,
+                            relief='solid')
+        
+        # ===== NOTEBOOK (TABS) =====
+        
+        self.style.configure('TNotebook',
+                            background=self.colores['card_bg'],
+                            borderwidth=1,
+                            relief='solid')
+        
+        self.style.configure('TNotebook.Tab',
+                            background=self.colores['dark_bg'],
+                            foreground=self.colores['text_secondary'],
+                            padding=[20, 10],
+                            font=('Segoe UI', 10))
+        
+        self.style.map('TNotebook.Tab',
+                    background=[('selected', self.colores['primary_green']),
+                                ('active', self.colores['hover_bg'])],
+                    foreground=[('selected', self.colores['dark_bg']),
+                                ('active', self.colores['dark_bg'])])
+        
+        print("✅ Estilos Athena configurados correctamente - Versión Completa")
+
     def inicializar_aplicacion(self):
         """Inicializa la aplicación verificando la conexión a BD"""
         print("🏋️ === INICIANDO GIMNASIO ATHENAS ===")
@@ -318,52 +427,126 @@ class GimnasioApp:
         self.mostrar_dashboard_resumen()
     
     def crear_header(self, parent):
-        """Crea el header de la aplicación"""
-        header_frame = ttk.Frame(parent)
-        header_frame.pack(fill='x', pady=(0, 20))
+        """Crea el header de la aplicación con logo real de ATHENA"""
+        header_frame = ttk.Frame(parent, style='Card.TFrame')
+        header_frame.pack(fill='x', pady=(0, 10))
         
-        # Título y logo
-        title_frame = ttk.Frame(header_frame)
-        title_frame.pack(side='left')
+        # Contenedor principal del header
+        header_container = ttk.Frame(header_frame, style='Card.TFrame')
+        header_container.pack(fill='x', padx=10, pady=15)
+        
+        # LADO IZQUIERDO: Logo y título
+        left_section = ttk.Frame(header_container, style='Card.TFrame')
+        left_section.pack(side='left', fill='y')
+        
+        # Cargar y mostrar el logo
+        logo_frame = ttk.Frame(left_section, style='Card.TFrame')
+        logo_frame.pack(side='left', padx=(0, 15))
+        
+        try:
+            # Cargar el logo real de ATHENA
+            from PIL import Image, ImageTk
+            
+            logo_image = Image.open('assets/logo_athena.png')
+
+            original_width, original_height = logo_image.size
+            aspect_ratio = original_width / original_height
+            
+            desired_height = 75 
+            desired_width = int(desired_height * aspect_ratio)
+
+            logo_image = logo_image.resize((desired_width, desired_height), Image.Resampling.LANCZOS)
+            self.logo_header = ImageTk.PhotoImage(logo_image)
+            
+            logo_label = tk.Label(
+                logo_frame,
+                image=self.logo_header,
+                bg=self.colores['card_bg'],
+                relief='flat',
+                borderwidth=0
+            )
+            logo_label.pack()
+            
+        except Exception as e:
+            print(f"⚠️ No se pudo cargar el logo: {e}")
+            logo_label = tk.Label(
+                logo_frame,
+                text="🏋️",
+                font=('Segoe UI', 24, 'bold'),
+                bg=self.colores['primary_green'],
+                fg=self.colores['dark_bg'],
+                width=3,
+                height=1,
+                relief='raised',
+                borderwidth=0
+            )
+            logo_label.pack()
+        
+        # Textos del título
+        title_frame = ttk.Frame(left_section, style='Card.TFrame')
+        title_frame.pack(side='left', fill='y')
         
         title_label = ttk.Label(
             title_frame,
-            text="🏋️ GIMNASIO ATHENAS",
-            font=('Segoe UI', 20, 'bold')
+            text="GIMNASIO ATHENA",
+            style='Header.TLabel'
         )
         title_label.pack(anchor='w')
         
         subtitle_label = ttk.Label(
             title_frame,
             text="Sistema de Gestión Integral",
-            font=('Segoe UI', 10),
-            foreground='gray'
+            style='HeaderSub.TLabel'
         )
         subtitle_label.pack(anchor='w')
         
-        # Información del usuario
-        user_frame = ttk.Frame(header_frame)
-        user_frame.pack(side='right')
+        right_section = ttk.Frame(header_container, style='Card.TFrame')
+        right_section.pack(side='right', fill='y')
+        
+        user_info_frame = ttk.Frame(right_section, style='Card.TFrame')
+        user_info_frame.pack(side='left', padx=(0, 15))
         
         user_label = ttk.Label(
-            user_frame,
+            user_info_frame,
             text=f"👤 {self.usuario_actual['nombre']} {self.usuario_actual['apellido']}",
-            font=('Segoe UI', 11, 'bold')
+            style='User.TLabel'
         )
         user_label.pack(anchor='e')
         
-        role_label = ttk.Label(
-            user_frame,
-            text=f"🎭 {self.usuario_actual['rol'].replace('_', ' ').title()}",
-            font=('Segoe UI', 9),
-            foreground='gray'
-        )
-        role_label.pack(anchor='e')
+        role_container = tk.Frame(user_info_frame, bg=self.colores['card_bg'])
+        role_container.pack(anchor='e', pady=(5, 0))
         
-        # Separador
-        separator = ttk.Separator(parent, orient='horizontal')
-        separator.pack(fill='x', pady=(10, 20))
-    
+        role_label = tk.Label(
+            role_container,
+            text=f"🎭 {self.usuario_actual['rol'].replace('_', ' ').title()}",
+            font=('Segoe UI', 9, 'normal'),
+            bg=self.colores['primary_purple'],
+            fg=self.colores['text_primary'],
+            padx=8,
+            pady=2,
+            relief='raised',
+            borderwidth=0
+        )
+        role_label.pack()
+        
+        avatar_label = tk.Label(
+            right_section,
+            text=self.usuario_actual['nombre'][0].upper(),
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colores['primary_purple'],
+            fg=self.colores['text_primary'],
+            width=3,
+            height=1,
+            relief='raised',
+            borderwidth=0
+        )
+        avatar_label.pack(side='right')
+        
+        # Separador estilizado
+        separator = ttk.Separator(parent, orient='horizontal', style='Athena.TSeparator')
+        separator.pack(fill='x', pady=(5, 15), padx=10)
+
+
     def crear_menu_lateral(self, parent):
         """Crea el menú lateral de navegación"""
         self.menu_frame = ttk.LabelFrame(parent, text="📋 MÓDULOS DEL SISTEMA", padding=10)
@@ -471,9 +654,14 @@ class GimnasioApp:
             label.pack(anchor='w', pady=2)
     
     def limpiar_area_trabajo(self):
-        """Limpia el área de trabajo"""
-        for widget in self.work_frame.winfo_children():
-            widget.destroy()
+        """Limpia el área de trabajo de forma segura"""
+        try:
+            if hasattr(self, 'work_frame') and self.work_frame and self.work_frame.winfo_exists():
+                for widget in self.work_frame.winfo_children():
+                    widget.destroy()
+        except (tk.TclError, AttributeError):
+            # El widget no existe o ya fue destruido
+            pass
     
     # ==================== MÉTODOS DE NAVEGACIÓN ====================
     
@@ -576,11 +764,11 @@ class GimnasioApp:
         """Crea la tabla de usuarios con Treeview"""
         # Frame para la tabla
         table_frame = ttk.Frame(self.work_frame)
-        table_frame.pack(fill='both', expand=True, pady=10)
+        table_frame.pack(fill='both', expand=True, pady=(0, 5))
         
         # Configurar Treeview
         columns = ('ID', 'Nombre', 'Apellido', 'Email', 'Rol', 'Estado', 'Creado')
-        self.usuarios_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
+        self.usuarios_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=8)
         
         # Configurar encabezados
         self.usuarios_tree.heading('ID', text='ID')
@@ -602,13 +790,13 @@ class GimnasioApp:
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.usuarios_tree.yview)
-        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.usuarios_tree.xview)
-        self.usuarios_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        # h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.usuarios_tree.xview)
+        self.usuarios_tree.configure(yscrollcommand=v_scrollbar.set)
         
         # Empaquetar
         self.usuarios_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
-        h_scrollbar.pack(side='bottom', fill='x')
+        # h_scrollbar.pack(side='bottom', fill='x')
         
         # Eventos
         self.usuarios_tree.bind('<<TreeviewSelect>>', self.on_usuario_selected)
