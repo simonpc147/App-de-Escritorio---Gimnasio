@@ -7,7 +7,7 @@ class Database:
             'host': 'localhost',
             'user': 'root',
             'password': '', 
-            'database': 'ahenas',
+            'database': 'athenas',
             'port': 3306
         }
         self.connection = None

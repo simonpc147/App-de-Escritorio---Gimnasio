@@ -29,6 +29,7 @@ class UserController:
         """
         Crea un nuevo usuario según las reglas de negocio
         """
+        
         try:
             # Validar permisos según rol del creador
             if not self._validar_permisos_creacion(creado_por_id, datos_usuario['rol']):
@@ -42,10 +43,8 @@ class UserController:
             if self._email_existe(datos_usuario['email']):
                 return {"success": False, "message": "El email ya está registrado"}
             
-            # Cifrar contraseña
             password_hash = self._hash_password(datos_usuario['contraseña'])
             
-            # Insertar usuario
             usuario_id = self.usuario_model.insert_usuario(
                 datos_usuario['nombre'],
                 datos_usuario['apellido'],
@@ -57,7 +56,10 @@ class UserController:
                 datos_usuario['rol'],
                 creado_por_id
             )
-            
+
+            print(f"Usuario creado con ID: {usuario_id}")
+            print(f"Usuario creado con ID: {datos_usuario}")
+
             if usuario_id:
                 if datos_usuario['rol'] == 'coach':
                     from models.coach_model import CoachModel
@@ -70,11 +72,13 @@ class UserController:
                         salario=None
                     )
             
+            
                 return {
                     "success": True, 
                     "message": f"Usuario {datos_usuario['rol']} creado exitosamente",
                     "usuario_id": usuario_id
                 }
+            
 
             else:
                 return {"success": False, "message": "Error al crear el usuario"}
@@ -262,12 +266,8 @@ class UserController:
     
     #ELIMINAR USUARIOS
     def eliminar_usuario(self, user_id):
-        cursor = self.usuario_model.db.connection.cursor()
-        query = "DELETE FROM usuarios WHERE id = %s"
-        cursor.execute(query, (user_id,))
-        self.usuario_model.db.connection.commit()
-        cursor.close()
-    
+        self.usuario_model.delete_usuario(user_id)
+       
 
     def validar_credenciales(self, email, password):
         """Valida las credenciales de login"""

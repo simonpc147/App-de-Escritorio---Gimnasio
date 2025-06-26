@@ -173,7 +173,7 @@ class AtletaController:
                 return {"success": False, "message": "Atleta no encontrado"}
             
             atleta_data = atleta["atleta"]
-            id_plan = atleta_data[5]  # id_plan en posición 5
+            id_plan = atleta_data[8]  # id_plan en posición 5
             fecha_vencimiento_actual = atleta_data[7]  # fecha_vencimiento en posición 7
             
             # Procesar renovación
@@ -188,7 +188,6 @@ class AtletaController:
             if not renovacion_result["success"]:
                 return renovacion_result
             
-            # Actualizar estado del atleta
             nueva_fecha_vencimiento = renovacion_result["fecha_vencimiento_nueva"]
             self._actualizar_estado_membresia(atleta_id, nueva_fecha_vencimiento, 'solvente', datetime.now().date())
             

@@ -10,15 +10,15 @@ class UsuarioModel:
     
     # Aquí van los métodos para usuarios
     
-    def insert_usuario(self, nombre, apellido, edad, direccion, telefono, email, contraseña, rol, creado_por, estado_activo=True):
+    def insert_usuario(self, nombre, apellido, edad, direccion, telefono, email, contraseña, rol, creado_por):
         try:
             self.db.connect()
             cursor = self.db.connection.cursor()
             cursor.execute("""
                 INSERT INTO `usuarios` 
-                (`nombre`, `apellido`, `edad`, `direccion`, `telefono`, `email`, `contraseña`, `rol`, `creado_por`, `estado_activo`) 
+                (`nombre`, `apellido`, `edad`, `direccion`, `telefono`, `email`, `contraseña`, `rol`, `creado_por`) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (nombre, apellido, edad, direccion, telefono, email, contraseña, rol, creado_por, estado_activo))
+            """, (nombre, apellido, edad, direccion, telefono, email, contraseña, rol, creado_por))
             self.db.connection.commit()
             print(cursor.rowcount)
             return cursor.lastrowid  # Retorna el ID del usuario insertado

@@ -753,6 +753,14 @@ class GimnasioApp:
             state='disabled'
         )
         self.toggle_btn.pack(side='left', padx=2)
+
+        self.toggle_btn = ttk.Button(
+            buttons_frame,
+            text=" Eliminar",
+            command=self.eliminar_usuario,
+            state='disabled'
+        )
+        self.toggle_btn.pack(side='left', padx=2)
         
         # Tabla de usuarios
         self.crear_tabla_usuarios()
@@ -909,11 +917,33 @@ class GimnasioApp:
 
     def editar_usuario(self, event=None):
         """Abre el formulario para editar el usuario seleccionado"""
+
         if not self.usuario_seleccionado:
+            print(self.usuario_seleccionado)
             messagebox.showwarning("Advertencia", "Selecciona un usuario para editar")
             return
         
         self.abrir_formulario_usuario(modo='editar', usuario=self.usuario_seleccionado)
+
+
+    def eliminar_usuario(self):
+        """Eliminar_usuario"""
+        
+        selection = self.usuarios_tree.selection()
+        item = self.usuarios_tree.item(selection[0])
+        user_id = item['values'][0]
+
+        print(f"id del USUARIOS {user_id}")
+
+        confirmar = messagebox.askyesno(
+            "Confirmar Eliminación","¿Está seguro que desea eliminar el usuario seleccionado, esta acción es irreversible"
+        )
+
+        if confirmar:
+            self.user_controller.eliminar_usuario(user_id)
+            messagebox.showinfo("Éxito", "Usuario eliminado exitosamente")
+            self.cargar_usuarios()  
+
 
     def toggle_usuario_estado(self):
         """Activa/Desactiva el usuario seleccionado"""
@@ -1536,7 +1566,7 @@ class GimnasioApp:
         # Ventana simple para renovación
         ventana = tk.Toplevel(self.root)
         ventana.title("Renovar Membresía")
-        ventana.geometry("400x200")
+        ventana.geometry("500x300")
         ventana.transient(self.root)
         ventana.grab_set()
         
@@ -3006,6 +3036,7 @@ class GimnasioApp:
             "Confirmar Eliminación",
             f"¿Estás seguro de que deseas eliminar el pago de ${monto:.2f} de {atleta} (ID: {pago_id})?\n\nEsta acción no se puede deshacer."
         )
+
 
         if confirmar:
             try:
