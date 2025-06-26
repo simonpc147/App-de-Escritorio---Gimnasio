@@ -53,7 +53,7 @@ class GimnasioApp:
             'primary_purple': '#8B5CF6',    
             'dark_purple': '#6B46C1',       
             'accent_lime': '#84CC16',       
-            'dark_bg': '#FFFFFF',           
+            'dark_bg': '#B8E01A',           
             'card_bg': '#FFFFFF',           
             'text_primary': '#0F0F23',     
             'text_secondary': '#FFFFFF',   
@@ -65,8 +65,14 @@ class GimnasioApp:
             'error': '#ef4444'
         }
         
-        # Configurar la ventana principal
         self.root.configure(bg=self.colores['dark_bg'])
+
+        self.style.configure('TLabelFrame',
+                            background='#FFFFFF', 
+                            foreground=self.colores['text_primary'],
+                            font=('Segoe UI', 11, 'bold'),
+                            relief='raised',
+                            borderwidth=1)
         
         # ===== ESTILOS BÁSICOS NECESARIOS =====
         
@@ -156,17 +162,7 @@ class GimnasioApp:
                     background=[('active', '#DC2626')],
                     relief=[('pressed', 'sunken')])
         
-        # ===== ESTILOS CRÍTICOS PARA LABELFRAMES (SOLUCIONAN LOS ERRORES) =====
         
-        # 🔥 CORRECCIÓN PRINCIPAL: Estilo para el área de trabajo
-        self.style.configure('Work.TLabelFrame',
-                            background=self.colores['card_bg'],
-                            foreground=self.colores['primary_green'],
-                            font=('Segoe UI', 12, 'bold'),
-                            relief='raised',
-                            borderwidth=2)
-        
-        # 🔥 CORRECCIÓN: Estilo para secciones generales
         self.style.configure('Section.TLabelFrame',
                             background=self.colores['card_bg'],
                             foreground=self.colores['primary_purple'],
@@ -174,7 +170,6 @@ class GimnasioApp:
                             relief='raised',
                             borderwidth=1)
         
-        # Estilo alternativo para módulos específicos
         self.style.configure('Module.TLabelFrame',
                             background=self.colores['card_bg'],
                             foreground=self.colores['primary_green'],
@@ -275,7 +270,7 @@ class GimnasioApp:
                     foreground=[('selected', self.colores['dark_bg']),
                                 ('active', self.colores['dark_bg'])])
         
-        print("✅ Estilos Athena configurados correctamente - Versión Completa")
+
 
     def inicializar_aplicacion(self):
         """Inicializa la aplicación verificando la conexión a BD"""
@@ -429,7 +424,7 @@ class GimnasioApp:
     def crear_header(self, parent):
         """Crea el header de la aplicación con logo real de ATHENA"""
         header_frame = ttk.Frame(parent, style='Card.TFrame')
-        header_frame.pack(fill='x', pady=(0, 10))
+        header_frame.pack(fill='x', pady=(0, 5))
         
         # Contenedor principal del header
         header_container = ttk.Frame(header_frame, style='Card.TFrame')
@@ -549,10 +544,17 @@ class GimnasioApp:
 
     def crear_menu_lateral(self, parent):
         """Crea el menú lateral de navegación"""
-        self.menu_frame = ttk.LabelFrame(parent, text="📋 MÓDULOS DEL SISTEMA", padding=10)
+        self.menu_frame = tk.Frame(parent, bg='#FFFFFF', relief='flat', bd=0)
         self.menu_frame.pack(side='left', fill='y', padx=(0, 10))
+
+        titulo_label = tk.Label(self.menu_frame, 
+                           text="📋 MÓDULOS DEL SISTEMA", 
+                           bg='#FFFFFF',
+                           fg=self.colores['text_primary'],
+                           font=('Segoe UI', 11, 'bold'),
+                           pady=10)
+        titulo_label.pack(fill='x')
         
-        # Botones según el rol del usuario
         botones = self.obtener_botones_por_rol()
         
         for texto, comando in botones:
@@ -560,12 +562,11 @@ class GimnasioApp:
                 self.menu_frame,
                 text=texto,
                 command=comando,
-                width=25
+                width=30
             )
-            btn.pack(fill='x', pady=2)
+            btn.pack(fill='x', pady=5)
         
-        # Separador
-        ttk.Separator(self.menu_frame, orient='horizontal').pack(fill='x', pady=10)
+        ttk.Separator(self.menu_frame, orient='horizontal').pack(fill='x', pady=(15, 0), ipady=2)
         
         # Botones de sistema
         self.crear_botones_sistema()
@@ -604,17 +605,20 @@ class GimnasioApp:
     
     def crear_botones_sistema(self):
         """Crea botones de sistema (cerrar sesión, etc.)"""
-        # Botón de cerrar sesión
+
+        spacer_frame = tk.Frame(self.menu_frame, bg='#FFFFFF')
+        spacer_frame.pack(fill='both', expand=True)
+
         logout_btn = ttk.Button(
             self.menu_frame,
             text="🚪 Cerrar Sesión",
             command=self.cerrar_sesion
         )
-        logout_btn.pack(fill='x', pady=5)
+        logout_btn.pack(fill='x', pady=(10))
     
     def crear_area_trabajo(self, parent):
         """Crea el área principal de trabajo"""
-        self.work_frame = ttk.LabelFrame(parent, text="📄 ÁREA DE TRABAJO", padding=10)
+        self.work_frame = tk.Frame(parent, bg='#B8E01A', padx=5, pady=5)
         self.work_frame.pack(side='right', fill='both', expand=True)
     
     def mostrar_dashboard_resumen(self):
@@ -629,7 +633,6 @@ class GimnasioApp:
         )
         title.pack(pady=(0, 20))
         
-        # Mensaje de bienvenida personalizado
         welcome_msg = ttk.Label(
             self.work_frame,
             text=f"¡Bienvenido/a {self.usuario_actual['nombre']}!\nSelecciona un módulo del menú lateral para comenzar.",
@@ -798,13 +801,11 @@ class GimnasioApp:
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.usuarios_tree.yview)
-        # h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.usuarios_tree.xview)
         self.usuarios_tree.configure(yscrollcommand=v_scrollbar.set)
         
         # Empaquetar
         self.usuarios_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
-        # h_scrollbar.pack(side='bottom', fill='x')
         
         # Eventos
         self.usuarios_tree.bind('<<TreeviewSelect>>', self.on_usuario_selected)
@@ -924,7 +925,6 @@ class GimnasioApp:
             return
         
         self.abrir_formulario_usuario(modo='editar', usuario=self.usuario_seleccionado)
-
 
     def eliminar_usuario(self):
         """Eliminar_usuario"""
@@ -1202,14 +1202,16 @@ class GimnasioApp:
         self.atletas_data = []
         self.atleta_seleccionado = None
         
-        # Título del módulo
-        title_frame = ttk.Frame(self.work_frame)
+        # Título del módulo - CAMBIAR A tk.Frame con fondo gris
+        title_frame = tk.Frame(self.work_frame, bg='#FFFFFF')
         title_frame.pack(fill='x', pady=(0, 20))
         
-        title_label = ttk.Label(
+        title_label = tk.Label(
             title_frame,
             text="🏃‍♂️ GESTIÓN DE ATLETAS",
-            font=('Segoe UI', 18, 'bold')
+            font=('Segoe UI', 18, 'bold'),
+            bg='#FFFFFF',
+            fg='#0F0F23'
         )
         title_label.pack(side='left')
         
@@ -1221,8 +1223,8 @@ class GimnasioApp:
         )
         refresh_btn.pack(side='right')
         
-        # Frame de controles
-        controls_frame = ttk.Frame(self.work_frame)
+        # Frame de controles - CAMBIAR A tk.Frame con fondo gris
+        controls_frame = tk.Frame(self.work_frame, bg='#FFFFFF')
         controls_frame.pack(fill='x', pady=(0, 10))
         
         # Búsqueda y filtros
@@ -1350,15 +1352,11 @@ class GimnasioApp:
         self.atletas_tree.column('Estado', width=80, anchor='center')
         self.atletas_tree.column('Vencimiento', width=100, anchor='center')
         
-        # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.atletas_tree.yview)
-        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.atletas_tree.xview)
-        self.atletas_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        self.atletas_tree.configure(yscrollcommand=v_scrollbar.set)
         
-        # Empaquetar
         self.atletas_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
-        h_scrollbar.pack(side='bottom', fill='x')
         
         self.atletas_tree.bind('<<TreeviewSelect>>', self.on_atleta_selected)
 
@@ -2626,13 +2624,12 @@ class GimnasioApp:
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.coaches_tree.yview)
-        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.coaches_tree.xview)
-        self.coaches_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        self.coaches_tree.configure(yscrollcommand=v_scrollbar.set)
         
         # Empaquetar
         self.coaches_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
-        h_scrollbar.pack(side='bottom', fill='x')
+       
         
         # Eventos
         self.coaches_tree.bind('<<TreeviewSelect>>', self.on_coach_selected)
@@ -2876,12 +2873,10 @@ class GimnasioApp:
         self.pagos_tree.column('Monto', anchor='e')
 
         v_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=self.pagos_tree.yview)
-        h_scroll = ttk.Scrollbar(table_frame, orient='horizontal', command=self.pagos_tree.xview)
-        self.pagos_tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+        self.pagos_tree.configure(yscrollcommand=v_scroll.set)
         
         self.pagos_tree.pack(side='left', fill='both', expand=True)
         v_scroll.pack(side='right', fill='y')
-        h_scroll.pack(side='bottom', fill='x')
 
         self.pagos_tree.bind('<<TreeviewSelect>>', self.on_pago_selected)
 
@@ -3601,13 +3596,11 @@ class GimnasioApp:
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.mis_atletas_tree.yview)
-        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.mis_atletas_tree.xview)
-        self.mis_atletas_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        self.mis_atletas_tree.configure(yscrollcommand=v_scrollbar.set)
         
         # Empaquetar
         self.mis_atletas_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
-        h_scrollbar.pack(side='bottom', fill='x')
         
         self.mis_atletas_tree.bind('<<TreeviewSelect>>', self.on_mi_atleta_selected)
 
@@ -4044,13 +4037,11 @@ class GimnasioApp:
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.rutinas_tree.yview)
-        h_scrollbar = ttk.Scrollbar(table_frame, orient='horizontal', command=self.rutinas_tree.xview)
-        self.rutinas_tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        self.rutinas_tree.configure(yscrollcommand=v_scrollbar.set)
         
         # Empaquetar
         self.rutinas_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
-        h_scrollbar.pack(side='bottom', fill='x')
         
         self.rutinas_tree.bind('<<TreeviewSelect>>', self.on_rutina_selected)
 
@@ -4846,12 +4837,12 @@ class GimnasioApp:
         self.egresos_tree.column('Monto', anchor='e')
 
         v_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=self.egresos_tree.yview)
-        h_scroll = ttk.Scrollbar(table_frame, orient='horizontal', command=self.egresos_tree.xview)
-        self.egresos_tree.configure(yscrollcommand=v_scroll.set, xscrollcommand=h_scroll.set)
+        
+        self.egresos_tree.configure(yscrollcommand=v_scroll.set)
         
         self.egresos_tree.pack(side='left', fill='both', expand=True)
         v_scroll.pack(side='right', fill='y')
-        h_scroll.pack(side='bottom', fill='x')
+       
 
     def cargar_egresos(self):
         """Carga los datos de egresos desde el controlador y actualiza la tabla."""
