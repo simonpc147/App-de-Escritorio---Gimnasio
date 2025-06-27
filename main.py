@@ -7,6 +7,9 @@ import sys
 import os
 from datetime import datetime, timedelta
 
+import tkfontawesome as tkfa
+import customtkinter as ctk
+
 from controllers.auth_controller import AuthController
 from controllers.rutina_controller import RutinaController
 from controllers.user_controller import UserController
@@ -39,6 +42,25 @@ class GimnasioApp:
         self.configurar_estilos()
         
         self.inicializar_aplicacion()
+
+        self.iconos_cache = {}
+        
+    def crear_icono(self, nombre_icono, tamaño=16, color="white"):
+        """
+        Crea un icono de Font Awesome con cache para mejor rendimiento
+        """
+        cache_key = f"{nombre_icono}_{tamaño}_{color}"
+        
+        if cache_key not in self.iconos_cache:
+            try:
+                # Crear icono con el tamaño especificado
+                icono = tkfa.icon_to_image(nombre_icono, scale_to_width=tamaño, fill=color)
+                self.iconos_cache[cache_key] = icono
+            except Exception as e:
+                print(f"⚠️ Error creando icono '{nombre_icono}': {e}")
+                return None
+                
+        return self.iconos_cache[cache_key]
         
     
     
@@ -49,7 +71,7 @@ class GimnasioApp:
         
         # Colores del sistema Athena (mantener los mismos)
         self.colores = {
-            'primary_green': '#333333',     
+            'primary_green': '#1F0E45',     
             'primary_purple': '#8B5CF6',    
             'dark_purple': '#6B46C1',       
             'accent_lime': '#84CC16',       
@@ -545,7 +567,9 @@ class GimnasioApp:
     def crear_menu_lateral(self, parent):
         """Crea el menú lateral de navegación"""
         self.menu_frame = tk.Frame(parent, bg='#FFFFFF', relief='flat', bd=0)
-        self.menu_frame.pack(side='left', fill='y', padx=(0, 10))
+        self.menu_frame.pack(side='left', fill='y', padx=(10, 10))
+
+        
 
         titulo_label = tk.Label(self.menu_frame, 
                            text="📋 MÓDULOS DEL SISTEMA", 
@@ -556,62 +580,93 @@ class GimnasioApp:
         titulo_label.pack(fill='x')
         
         botones = self.obtener_botones_por_rol()
+
+        self.botones_menu = []
         
-        for texto, comando in botones:
-            btn = ttk.Button(
+        for icono, texto, comando in botones:
+            icono_imagen = self.crear_icono(icono, tamaño=16)
+
+            btn = ctk.CTkButton(
                 self.menu_frame,
                 text=texto,
-                command=comando,
-                width=30
+                image=icono_imagen, 
+                compound='left', 
+                anchor='w',
+                corner_radius=3,       
+                fg_color='#6B46C1',     
+                text_color='white',  
+                font=('Segoe UI', 14, 'bold'),  
+                height=45,
+                hover_color='#1F0E45', 
+                command=comando
             )
-            btn.pack(fill='x', pady=5)
+            
+
+            btn.pack(fill='x', pady=8)
+            self.botones_menu.append(btn)
+
+        ttk.Separator(self.menu_frame, orient='horizontal').pack(fill='x', pady=(15, 0))
         
-        ttk.Separator(self.menu_frame, orient='horizontal').pack(fill='x', pady=(15, 0), ipady=2)
-        
-        # Botones de sistema
         self.crear_botones_sistema()
+
+    def activar_boton_menu(self, boton_activo):
+        for btn in self.botones_menu:
+            btn.configure(fg_color='#6B46C1') 
+        
+        boton_activo.configure(fg_color="#1F0E45")  
     
     
     # ==================== MÉTODO MENU LATERAL ====================
 
     def obtener_botones_por_rol(self):
-        """Retorna los botones del menú según el rol del usuario"""
+        """Retorna los botones del menú según el rol del usuario con iconos Font Awesome"""
         rol = self.usuario_actual['rol']
         
         if rol == 'admin_principal':
             return [
-                ("👥 Gestión de Usuarios", self.abrir_gestion_usuarios),
-                ("🏃‍♂️ Gestión de Atletas", self.abrir_gestion_atletas),
-                ("💪 Gestión de Coaches", self.abrir_gestion_coaches),
-                ("💰 Gestión de Pagos", self.abrir_gestion_pagos),
-                ("💸 Gestión de Egresos", self.abrir_gestion_egresos),
-                ("📊 Reportes Financieros", self.abrir_reportes),
-                ("🏃‍♂️ Gestión de Rutinas", self.abrir_gestion_rutinas),
+                ("users", "Administrar Usuarios", self.abrir_gestion_usuarios),
+                ("running", "Gestión de Atletas", self.abrir_gestion_atletas),
+                ("user-tie", "Entrenadores", self.abrir_gestion_coaches),
+                ("dollar-sign", "Control de Pagos", self.abrir_gestion_pagos),
+                ("money-bill-wave", "Registrar Gastos", self.abrir_gestion_egresos),
+                ("chart-bar", "Reportes Financieros", self.abrir_reportes),
+                ("dumbbell", "Rutinas", self.abrir_gestion_rutinas),
             ]
         elif rol == 'secretaria':
             return [
-                ("🏃‍♂️ Gestión de Atletas", self.abrir_gestion_atletas),
-                ("💪 Gestión de Coaches", self.abrir_gestion_coaches),
-                ("💰 Gestión de Pagos", self.abrir_gestion_pagos), 
-                ("📊 Reportes", self.abrir_reportes)
+                ("running", "Gestión de Atletas", self.abrir_gestion_atletas),
+                ("user-tie", "Entrenadores", self.abrir_gestion_coaches),
+                ("dollar-sign", "Control de Pagos", self.abrir_gestion_pagos),
+                ("chart-bar", "Reportes Financieros", self.abrir_reportes),
             ]
         elif rol == 'coach':
             return [
-                ("👥 Mis Atletas", self.mostrar_mis_atletas_coach),
-                ("🏃‍♂️ Gestión de Rutinas", self.abrir_gestion_rutinas)
+                ("users", "Mis Atletas", self.mostrar_mis_atletas_coach),
+                ("dumbbell", "Rutinas", self.abrir_gestion_rutinas)
             ]
         else:
-            return [("📊 Dashboard", self.mostrar_dashboard_resumen)]
-    
+            return [("tachometer-alt", "Dashboard", self.mostrar_dashboard_resumen)]
+
     def crear_botones_sistema(self):
         """Crea botones de sistema (cerrar sesión, etc.)"""
 
         spacer_frame = tk.Frame(self.menu_frame, bg='#FFFFFF')
         spacer_frame.pack(fill='both', expand=True)
 
-        logout_btn = ttk.Button(
+        logout_icono = self.crear_icono("sign-out-alt", tamaño=16, color="white")  # ← Icono Font Awesome
+
+        logout_btn = ctk.CTkButton( 
             self.menu_frame,
-            text="🚪 Cerrar Sesión",
+            text="Cerrar Sesión",
+            image=logout_icono,
+            compound='left',
+            anchor='center',
+            corner_radius=3,
+            fg_color='#8B1538',       
+            hover_color='#A91D47',    
+            text_color='white',
+            font=('Segoe UI', 14, 'bold'),
+            height=45,
             command=self.cerrar_sesion
         )
         logout_btn.pack(fill='x', pady=(15))
@@ -672,6 +727,9 @@ class GimnasioApp:
         """Abre la gestión de usuarios"""
         if not self.verificar_permisos(['admin_principal']):
             return
+        
+        self.activar_boton_menu(self.botones_menu[0])
+
         self.mostrar_gestion_usuarios()
 
     def mostrar_gestion_usuarios(self):
@@ -1191,6 +1249,9 @@ class GimnasioApp:
         """Abre la gestión de atletas"""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+        
+        self.activar_boton_menu(self.botones_menu[1])
+        
         self.mostrar_gestion_atletas()
 
     def mostrar_gestion_atletas(self):
@@ -2165,6 +2226,9 @@ class GimnasioApp:
         """Abre la gestión de coaches"""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+        
+        self.activar_boton_menu(self.botones_menu[2])
+
         self.mostrar_gestion_coaches()
 
     def mostrar_gestion_coaches(self):
@@ -2750,6 +2814,9 @@ class GimnasioApp:
         # Se agrega la verificación de permisos y se indenta la línea siguiente
          if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+         
+         self.activar_boton_menu(self.botones_menu[3])
+
          self.mostrar_gestion_pagos()
 
     def mostrar_gestion_pagos(self):
@@ -3122,6 +3189,9 @@ class GimnasioApp:
         """Abre la vista de Reportes Financieros."""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+        
+        self.activar_boton_menu(self.botones_menu[5])
+
         self.mostrar_reportes_financieros()
 
     def mostrar_reportes_financieros(self):
@@ -3898,6 +3968,9 @@ class GimnasioApp:
         """Abre la gestión de rutinas"""
         if not self.verificar_permisos(['admin_principal', 'coach']):
             return
+        
+        self.activar_boton_menu(self.botones_menu[6])
+
         self.mostrar_gestion_rutinas()
 
     def mostrar_gestion_rutinas(self):
@@ -4795,6 +4868,9 @@ class GimnasioApp:
         """Abre la vista de Gestión de Egresos."""
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
+        
+        self.activar_boton_menu(self.botones_menu[4])
+
         self.mostrar_gestion_egresos()
 
     def mostrar_gestion_egresos(self):
