@@ -110,6 +110,32 @@ class AtletaModel:
                 cursor.close()
             self.db.disconnect()
 
+
+    def actualizar_estado_membresia(self, id_atleta, fecha_vencimiento, estado_solvencia):
+        """Actualiza solo el estado de membresía del atleta"""
+        try:
+            self.db.connect()
+            cursor = self.db.connection.cursor()
+            
+            cursor.execute("""
+                UPDATE atletas 
+                SET fecha_vencimiento = %s, estado_solvencia = %s 
+                WHERE id_atleta = %s
+            """, (fecha_vencimiento, estado_solvencia, id_atleta))
+            
+            self.db.connection.commit()
+            print(f"Estado de membresía actualizado para atleta {id_atleta}")
+            return cursor.rowcount > 0
+            
+        except mysql.connector.Error as error:
+            print(f"Error al actualizar estado de membresía: {error}")
+            return False
+            
+        finally:
+            if 'cursor' in locals() and cursor:
+                cursor.close()
+            self.db.disconnect()
+
     def delete_atleta(self, id_atleta):
         try:
             self.db.connect()

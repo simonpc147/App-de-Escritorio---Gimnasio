@@ -49,16 +49,16 @@ class GimnasioApp:
         
         # Colores del sistema Athena (mantener los mismos)
         self.colores = {
-            'primary_green': '#B8E000',     
+            'primary_green': '#333333',     
             'primary_purple': '#8B5CF6',    
             'dark_purple': '#6B46C1',       
             'accent_lime': '#84CC16',       
-            'dark_bg': '#B8E01A',           
+            'dark_bg': '#FFFFFF',           
             'card_bg': '#FFFFFF',           
             'text_primary': '#0F0F23',     
             'text_secondary': '#FFFFFF',   
             'border_color': '#8B5CF633',   
-            'hover_bg': '#B8E01A',          
+            'hover_bg': '#FFFFFF',          
             'shadow_color': '#8B5CF64D',    
             'success': '#10b981',
             'warning': '#f59e0b', 
@@ -513,7 +513,7 @@ class GimnasioApp:
         
         role_label = tk.Label(
             role_container,
-            text=f"🎭 {self.usuario_actual['rol'].replace('_', ' ').title()}",
+            text=f"{self.usuario_actual['rol'].replace('_', ' ').title()}",
             font=('Segoe UI', 9, 'normal'),
             bg=self.colores['primary_purple'],
             fg=self.colores['text_primary'],
@@ -614,11 +614,11 @@ class GimnasioApp:
             text="🚪 Cerrar Sesión",
             command=self.cerrar_sesion
         )
-        logout_btn.pack(fill='x', pady=(10))
+        logout_btn.pack(fill='x', pady=(15))
     
     def crear_area_trabajo(self, parent):
         """Crea el área principal de trabajo"""
-        self.work_frame = tk.Frame(parent, bg='#B8E01A', padx=5, pady=5)
+        self.work_frame = tk.Frame(parent, bg='#FFFFFF', padx=5, pady=5)
         self.work_frame.pack(side='right', fill='both', expand=True)
     
     def mostrar_dashboard_resumen(self):
@@ -741,14 +741,6 @@ class GimnasioApp:
         )
         self.create_btn.pack(side='left', padx=2)
         
-        self.edit_btn = ttk.Button(
-            buttons_frame,
-            text="✏️ Editar",
-            command=self.editar_usuario,
-            state='disabled'
-        )
-        self.edit_btn.pack(side='left', padx=2)
-        
         self.toggle_btn = ttk.Button(
             buttons_frame,
             text="🔄 Activar/Desactivar",
@@ -757,13 +749,22 @@ class GimnasioApp:
         )
         self.toggle_btn.pack(side='left', padx=2)
 
+
+        self.edit_btn = ttk.Button(
+            buttons_frame,
+            text="✏️ Editar", 
+            command=self.editar_usuario,
+            state='disabled'
+        )
+        self.edit_btn.pack(side='left', padx=1)
+
         self.toggle_btn = ttk.Button(
             buttons_frame,
-            text=" Eliminar",
+            text="🗑️ Eliminar",
             command=self.eliminar_usuario,
             state='disabled'
         )
-        self.toggle_btn.pack(side='left', padx=2)
+        self.toggle_btn.pack(side='left', padx=1)
         
         # Tabla de usuarios
         self.crear_tabla_usuarios()
@@ -791,13 +792,13 @@ class GimnasioApp:
         self.usuarios_tree.heading('Creado', text='Fecha Creación')
         
         # Configurar anchos
-        self.usuarios_tree.column('ID', width=50, anchor='center')
-        self.usuarios_tree.column('Nombre', width=100)
-        self.usuarios_tree.column('Apellido', width=100)
-        self.usuarios_tree.column('Email', width=200)
-        self.usuarios_tree.column('Rol', width=120)
-        self.usuarios_tree.column('Estado', width=80, anchor='center')
-        self.usuarios_tree.column('Creado', width=120, anchor='center')
+        self.usuarios_tree.column('ID', width=10, anchor='center')
+        self.usuarios_tree.column('Nombre', width=70)
+        self.usuarios_tree.column('Apellido', width=70)
+        self.usuarios_tree.column('Email', width=120)
+        self.usuarios_tree.column('Rol', width=70, anchor='center')
+        self.usuarios_tree.column('Estado', width=30, anchor='center')
+        self.usuarios_tree.column('Creado', width=50, anchor='center')
         
         # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.usuarios_tree.yview)
@@ -831,42 +832,40 @@ class GimnasioApp:
 
     def actualizar_tabla_usuarios(self, usuarios_filtrados=None):
         """Actualiza la tabla con los usuarios"""
-        # Limpiar tabla
         for item in self.usuarios_tree.get_children():
             self.usuarios_tree.delete(item)
         
-        # Usar usuarios filtrados o todos
         usuarios = usuarios_filtrados if usuarios_filtrados is not None else self.usuarios_data
+        
         
         # Llenar tabla
         for usuario in usuarios:
-            # Formatear datos
             user_id = usuario[0]
             nombre = usuario[1]
             apellido = usuario[2]
             email = usuario[6]
             rol = usuario[8].replace('_', ' ').title()
             estado = "Activo" if usuario[9] else "Inactivo"
-            # Fecha de creación - simple y efectiva
             try:
                 if usuario[12]:
                     fecha_str = str(usuario[12])
-                    fecha = fecha_str[:10]  # Tomar solo YYYY-MM-DD
+                    fecha = fecha_str[:10]  
                 else:
                     fecha = "N/A"
             except:
                 fecha = "N/A"
             
-            # Insertar fila
             item = self.usuarios_tree.insert('', 'end', values=(
                 user_id, nombre, apellido, email, rol, estado, fecha
             ))
+
             
-            # Colorear según estado
-            if not usuario[9]:  # Inactivo
+            
+            if not usuario[9]:
                 self.usuarios_tree.set(item, 'Estado', 'Inactivo')
             else:
                 self.usuarios_tree.set(item, 'Estado', 'Activo')
+
 
     def filtrar_usuarios(self, *args):
         """Filtra usuarios según búsqueda y rol"""

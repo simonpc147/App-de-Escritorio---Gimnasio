@@ -4,7 +4,7 @@ from models.usuario_model import UsuarioModel
 from controllers.user_controller import UserController
 from controllers.finance_controller import FinanceController
 from models.coach_model import CoachModel
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import re
 
 
@@ -161,11 +161,15 @@ class AtletaController:
     
     # ==================== GESTIÓN DE MEMBRESÍAS ====================
     
+    
     def renovar_membresia(self, atleta_id, metodo_pago, procesado_por_id):
-        """Renueva la membresía de un atleta"""
+        """Renueva la membresía de un atleta - ÍNDICES CORREGIDOS"""
         try:
             if not self._puede_gestionar_atletas(procesado_por_id):
                 return {"success": False, "message": "No tienes permisos para renovar membresías"}
+            
+            # Asegurar que atleta_id sea entero
+            atleta_id = int(atleta_id)
             
             # Obtener datos del atleta
             atleta = self.obtener_atleta_por_id(atleta_id)
@@ -173,8 +177,39 @@ class AtletaController:
                 return {"success": False, "message": "Atleta no encontrado"}
             
             atleta_data = atleta["atleta"]
-            id_plan = atleta_data[8]  # id_plan en posición 5
-            fecha_vencimiento_actual = atleta_data[7]  # fecha_vencimiento en posición 7
+            
+            id_plan = atleta_data[7]  
+          
+            fecha_vencimiento_actual = None
+            
+            fecha_inscripcion = atleta_data[5]  # datetime.date(2025, 6, 23)
+            
+            # Obtener duración del plan desde la BD
+            try:
+                self.db.connect() if hasattr(self, 'db') else None
+                # O usar el atleta_model para obtener la fecha_vencimiento correcta
+                
+                # SOLUCIÓN TEMPORAL: Calcular fecha_vencimiento
+                if fecha_inscripcion:
+                    from datetime import timedelta
+                    # Asumir 30 días por defecto (deberías obtener esto del plan)
+                    dias_plan = 30  # Esto debería venir de la tabla planes
+                    fecha_vencimiento_actual = fecha_inscripcion + timedelta(days=dias_plan)
+                else:
+                    return {"success": False, "message": "No se puede determinar fecha de vencimiento"}
+                    
+            except Exception as e:
+                print(f"Error calculando fecha vencimiento: {e}")
+                return {"success": False, "message": "Error al calcular fecha de vencimiento"}
+            
+            # Asegurar que id_plan sea entero
+            id_plan = int(id_plan) if id_plan else None
+            if not id_plan:
+                return {"success": False, "message": "El atleta no tiene un plan asignado"}
+            
+            print(f"🔍 DATOS CORREGIDOS:")
+            print(f"   id_plan: {id_plan} (tipo: {type(id_plan)})")
+            print(f"   fecha_vencimiento_actual: {fecha_vencimiento_actual} (tipo: {type(fecha_vencimiento_actual)})")
             
             # Procesar renovación
             renovacion_result = self.finance_controller.procesar_renovacion_membresia(
@@ -189,7 +224,22 @@ class AtletaController:
                 return renovacion_result
             
             nueva_fecha_vencimiento = renovacion_result["fecha_vencimiento_nueva"]
-            self._actualizar_estado_membresia(atleta_id, nueva_fecha_vencimiento, 'solvente', datetime.now().date())
+            
+            # Asegurar que nueva_fecha_vencimiento sea un objeto date
+            if isinstance(nueva_fecha_vencimiento, str):
+                nueva_fecha_vencimiento = datetime.strptime(nueva_fecha_vencimiento[:10], '%Y-%m-%d').date()
+            elif isinstance(nueva_fecha_vencimiento, datetime):
+                nueva_fecha_vencimiento = nueva_fecha_vencimiento.date()
+            
+            # Usar fecha actual
+            fecha_actual = datetime.now().date()
+            
+            self._actualizar_estado_membresia(
+                atleta_id, 
+                nueva_fecha_vencimiento, 
+                'solvente', 
+                fecha_actual
+            )
             
             return {
                 "success": True,
@@ -199,9 +249,11 @@ class AtletaController:
                 "monto": renovacion_result["monto"]
             }
             
+        except ValueError as ve:
+            return {"success": False, "message": f"Error de formato de datos: {str(ve)}"}
         except Exception as e:
             return {"success": False, "message": f"Error interno: {str(e)}"}
-    
+
     def cambiar_plan_atleta(self, atleta_id, nuevo_plan_id, metodo_pago, procesado_por_id):
         """Cambia el plan de un atleta y procesa el pago correspondiente"""
         try:
@@ -438,11 +490,39 @@ class AtletaController:
         except Exception:
             return None
     
-    def _actualizar_estado_membresia(self, atleta_id, fecha_vencimiento, estado_solvencia, fecha_ultimo_pago):
+    def _actualizar_estado_membresia(self, atleta_id, fecha_vencimiento, estado_solvencia, fecha_actualizacion):
         """Actualiza el estado de membresía del atleta"""
-        print(f"Lógica para actualizar membresía del atleta {atleta_id} no implementada en el modelo.")
-        pass
-    
+        try:
+            # Asegurar que atleta_id sea entero
+            atleta_id = int(atleta_id)
+            
+            # Convertir fechas si es necesario
+            if isinstance(fecha_vencimiento, str):
+                fecha_vencimiento = datetime.strptime(fecha_vencimiento[:10], '%Y-%m-%d').date()
+            elif isinstance(fecha_vencimiento, datetime):
+                fecha_vencimiento = fecha_vencimiento.date()
+            
+            # Usar el método específico del modelo
+            resultado = self.atleta_model.actualizar_estado_membresia(
+                id_atleta=atleta_id,
+                fecha_vencimiento=fecha_vencimiento,
+                estado_solvencia=estado_solvencia
+            )
+            
+            if resultado:
+                print(f"✅ Estado de membresía actualizado para atleta {atleta_id}")
+                return True
+            else:
+                print(f"❌ Error al actualizar estado de membresía para atleta {atleta_id}")
+                return False
+                
+        except ValueError as ve:
+            print(f"❌ Error de formato en _actualizar_estado_membresia: {ve}")
+            return False
+        except Exception as e:
+            print(f"❌ Error en _actualizar_estado_membresia: {e}")
+            return False
+
     def _actualizar_plan_y_membresia(self, atleta_id, nuevo_plan_id, fecha_vencimiento, estado_solvencia, fecha_ultimo_pago):
         """Actualiza el plan y estado de membresía del atleta"""
         try:
