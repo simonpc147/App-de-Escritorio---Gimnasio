@@ -45,7 +45,7 @@ class GimnasioApp:
 
         self.iconos_cache = {}
         
-    def crear_icono(self, nombre_icono, tamaño=16, color="white"):
+    def crear_icono(self, nombre_icono, tamaño=16, color="black"):
         """
         Crea un icono de Font Awesome con cache para mejor rendimiento
         """
@@ -53,28 +53,24 @@ class GimnasioApp:
         
         if cache_key not in self.iconos_cache:
             try:
-                # Crear icono con el tamaño especificado
                 icono = tkfa.icon_to_image(nombre_icono, scale_to_width=tamaño, fill=color)
                 self.iconos_cache[cache_key] = icono
             except Exception as e:
                 print(f"⚠️ Error creando icono '{nombre_icono}': {e}")
                 return None
                 
-        return self.iconos_cache[cache_key]
-        
-    
+        return self.iconos_cache[cache_key] 
     
     def configurar_estilos(self):
         """Configura estilos globales de la aplicación - ATHENA STYLE COMPLETO"""
         self.style = ttk.Style()
         self.style.theme_use('clam')
         
-        # Colores del sistema Athena (mantener los mismos)
         self.colores = {
             'primary_green': '#1F0E45',     
-            'primary_purple': '#8B5CF6',    
+            'primary_purple': '#dcdad5',    
             'dark_purple': '#6B46C1',       
-            'accent_lime': '#84CC16',       
+            'accent_lime': '#CCFF00',       
             'dark_bg': '#FFFFFF',           
             'card_bg': '#FFFFFF',           
             'text_primary': '#0F0F23',     
@@ -290,10 +286,8 @@ class GimnasioApp:
                     background=[('selected', self.colores['primary_green']),
                                 ('active', self.colores['hover_bg'])],
                     foreground=[('selected', self.colores['dark_bg']),
-                                ('active', self.colores['dark_bg'])])
+                                ('active', self.colores['dark_bg'])])     
         
-
-
     def inicializar_aplicacion(self):
         """Inicializa la aplicación verificando la conexión a BD"""
         print("🏋️ === INICIANDO GIMNASIO ATHENAS ===")
@@ -444,34 +438,28 @@ class GimnasioApp:
         self.mostrar_dashboard_resumen()
     
     def crear_header(self, parent):
-        """Crea el header de la aplicación con logo real de ATHENA"""
         header_frame = ttk.Frame(parent, style='Card.TFrame')
         header_frame.pack(fill='x', pady=(0, 5))
         
-        # Contenedor principal del header
         header_container = ttk.Frame(header_frame, style='Card.TFrame')
         header_container.pack(fill='x', padx=10, pady=15)
         
-        # LADO IZQUIERDO: Logo y título
         left_section = ttk.Frame(header_container, style='Card.TFrame')
         left_section.pack(side='left', fill='y')
         
-        # Cargar y mostrar el logo
         logo_frame = ttk.Frame(left_section, style='Card.TFrame')
         logo_frame.pack(side='left', padx=(0, 15))
         
         try:
-            # Cargar el logo real de ATHENA
             from PIL import Image, ImageTk
             
             logo_image = Image.open('assets/logo_athena.png')
-
             original_width, original_height = logo_image.size
             aspect_ratio = original_width / original_height
             
             desired_height = 75 
             desired_width = int(desired_height * aspect_ratio)
-
+            
             logo_image = logo_image.resize((desired_width, desired_height), Image.Resampling.LANCZOS)
             self.logo_header = ImageTk.PhotoImage(logo_image)
             
@@ -499,16 +487,16 @@ class GimnasioApp:
             )
             logo_label.pack()
         
-        # Textos del título
         title_frame = ttk.Frame(left_section, style='Card.TFrame')
         title_frame.pack(side='left', fill='y')
         
         title_label = ttk.Label(
             title_frame,
             text="GIMNASIO ATHENA",
-            style='Header.TLabel'
+            style='Header.TLabel',
+            font=('Trebuchet MS', 28, 'bold'),
         )
-        title_label.pack(anchor='w')
+        title_label.pack(anchor='w', pady=(15, 0))
         
         subtitle_label = ttk.Label(
             title_frame,
@@ -537,7 +525,6 @@ class GimnasioApp:
             role_container,
             text=f"{self.usuario_actual['rol'].replace('_', ' ').title()}",
             font=('Segoe UI', 9, 'normal'),
-            bg=self.colores['primary_purple'],
             fg=self.colores['text_primary'],
             padx=8,
             pady=2,
@@ -546,23 +533,20 @@ class GimnasioApp:
         )
         role_label.pack()
         
-        avatar_label = tk.Label(
+        avatar_label = ctk.CTkLabel(
             right_section,
             text=self.usuario_actual['nombre'][0].upper(),
-            font=('Segoe UI', 16, 'bold'),
-            bg=self.colores['primary_purple'],
-            fg=self.colores['text_primary'],
-            width=3,
-            height=1,
-            relief='raised',
-            borderwidth=0
+            font=('Segoe UI', 18, 'bold'),
+            fg_color=self.colores['accent_lime'],
+            text_color="black",
+            width=50,
+            height=50,
+            corner_radius=25
         )
         avatar_label.pack(side='right')
         
-        # Separador estilizado
         separator = ttk.Separator(parent, orient='horizontal', style='Athena.TSeparator')
         separator.pack(fill='x', pady=(5, 15), padx=10)
-
 
     def crear_menu_lateral(self, parent):
         """Crea el menú lateral de navegación"""
@@ -593,11 +577,11 @@ class GimnasioApp:
                 compound='left', 
                 anchor='w',
                 corner_radius=3,       
-                fg_color='#6B46C1',     
-                text_color='white',  
-                font=('Segoe UI', 14, 'bold'),  
+                fg_color='#dcdad5',     
+                text_color='black',  
+                font=('Trebuchet MS', 16, 'normal'),  
                 height=45,
-                hover_color='#1F0E45', 
+                hover_color="#CCFF00", 
                 command=comando
             )
             
@@ -611,9 +595,9 @@ class GimnasioApp:
 
     def activar_boton_menu(self, boton_activo):
         for btn in self.botones_menu:
-            btn.configure(fg_color='#6B46C1') 
+            btn.configure(fg_color='#dcdad5') 
         
-        boton_activo.configure(fg_color="#1F0E45")  
+        boton_activo.configure(fg_color="#CCFF00")  
     
     
     # ==================== MÉTODO MENU LATERAL ====================
@@ -721,7 +705,7 @@ class GimnasioApp:
             # El widget no existe o ya fue destruido
             pass
     
-    # ==================== MÉTODOS DE NAVEGACIÓN ====================
+    # ==================== ADMINISTRAR USUARIOS ====================
     
     def abrir_gestion_usuarios(self):
         """Abre la gestión de usuarios"""
@@ -923,7 +907,6 @@ class GimnasioApp:
                 self.usuarios_tree.set(item, 'Estado', 'Inactivo')
             else:
                 self.usuarios_tree.set(item, 'Estado', 'Activo')
-
 
     def filtrar_usuarios(self, *args):
         """Filtra usuarios según búsqueda y rol"""
