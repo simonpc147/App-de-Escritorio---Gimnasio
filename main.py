@@ -1,10 +1,5 @@
 import tkinter as tk
-import tkinter.simpledialog
 from tkinter import ttk, messagebox
-
-from tkcalendar import DateEntry
-import sys
-import os
 from datetime import datetime, timedelta
 
 import tkfontawesome as tkfa
@@ -576,7 +571,9 @@ class GimnasioApp:
                 image=icono_imagen, 
                 compound='left', 
                 anchor='w',
-                corner_radius=3,       
+                corner_radius=3,
+                border_width=2,
+                border_color="#BDBDBD",       
                 fg_color='#dcdad5',     
                 text_color='black',  
                 font=('Trebuchet MS', 16, 'normal'),  
@@ -637,7 +634,7 @@ class GimnasioApp:
         spacer_frame = tk.Frame(self.menu_frame, bg='#FFFFFF')
         spacer_frame.pack(fill='both', expand=True)
 
-        logout_icono = self.crear_icono("sign-out-alt", tamaño=16, color="white")  # ← Icono Font Awesome
+        logout_icono = self.crear_icono("sign-out-alt", tamaño=16, color="white")
 
         logout_btn = ctk.CTkButton( 
             self.menu_frame,
@@ -664,36 +661,96 @@ class GimnasioApp:
         """Muestra el resumen principal del dashboard"""
         self.limpiar_area_trabajo()
         
-        # Título
-        title = ttk.Label(
-            self.work_frame,
-            text="📊 DASHBOARD PRINCIPAL",
-            font=('Segoe UI', 16, 'bold')
+        header_frame = ttk.Frame(self.work_frame)
+        header_frame.pack(fill='x', pady=(0, 30))
+        
+        title_container = ttk.Frame(header_frame)
+        title_container.pack()
+        
+        welcome_frame = tk.Frame(self.work_frame, bg='#dcdad5', relief='raised', bd=0)
+        welcome_frame.pack(fill='x', pady=(0, 20), padx=10)
+        
+        # Obtener hora para saludo personalizado
+        import datetime
+        hora_actual = datetime.datetime.now().hour
+        if hora_actual < 12:
+            saludo = "Buenos días"
+            emoji = "🌅"
+        elif hora_actual < 18:
+            saludo = "Buenas tardes"
+            emoji = "☀️"
+        else:
+            saludo = "Buenas noches"
+            emoji = "🌙"
+        
+        welcome_title = tk.Label(
+            welcome_frame,
+            text=f"{emoji} {saludo}, {self.usuario_actual['nombre']}!",
+            font=('Segoe UI', 16, 'bold'),
+            bg='#dcdad5',
+            fg='#1F0E45'
         )
-        title.pack(pady=(0, 20))
+        welcome_title.pack(pady=(15, 5))
         
-        welcome_msg = ttk.Label(
-            self.work_frame,
-            text=f"¡Bienvenido/a {self.usuario_actual['nombre']}!\nSelecciona un módulo del menú lateral para comenzar.",
-            font=('Segoe UI', 12),
-            justify='center'
+        welcome_subtitle = tk.Label(
+            welcome_frame,
+            text="Selecciona un módulo del menú lateral para comenzar a gestionar tu gimnasio",
+            font=('Segoe UI', 11),
+            bg='#dcdad5',
+            fg='#333333'
         )
-        welcome_msg.pack(pady=20)
+        welcome_subtitle.pack(pady=(0, 15))
         
-        # Información de sesión
-        session_frame = ttk.LabelFrame(self.work_frame, text="🔐 Información de Sesión", padding=10)
-        session_frame.pack(fill='x', pady=20)
+        info_container = ttk.Frame(self.work_frame)
+        info_container.pack(fill='x', pady=20)
         
-        session_info = [
-            f"👤 Usuario: {self.usuario_actual['nombre']} {self.usuario_actual['apellido']}",
-            f"📧 Email: {self.usuario_actual['email']}",
-            f"🎭 Rol: {self.usuario_actual['rol'].replace('_', ' ').title()}",
-            f"🔑 Token: {self.token_sesion[:10]}..."
+        user_frame = tk.Frame(info_container, bg='#dcdad5', relief='raised', bd=0)
+        user_frame.pack(side='left', fill='both', expand=True, padx=(10, 5))
+        
+        user_title = tk.Label(user_frame, text="👤 Tu Perfil", 
+                            font=('Segoe UI', 12, 'bold'), bg='#dcdad5', fg='#1F0E45')
+        user_title.pack(anchor='w', padx=15, pady=(15, 10))
+        
+        user_info = [
+            f"Nombre: {self.usuario_actual['nombre']} {self.usuario_actual['apellido']}",
+            f"Email: {self.usuario_actual['email']}",
+            f"Rol: {self.usuario_actual['rol'].replace('_', ' ').title()}",
+            f"ID de Usuario: #{self.usuario_actual['id']}"
         ]
         
-        for info in session_info:
-            label = ttk.Label(session_frame, text=info, font=('Segoe UI', 10))
-            label.pack(anchor='w', pady=2)
+        for info in user_info:
+            label = tk.Label(user_frame, text=info, font=('Segoe UI', 10), 
+                            bg='#dcdad5', fg='#333333')
+            label.pack(anchor='w', padx=15, pady=2)
+        
+        tk.Label(user_frame, text="", bg='#dcdad5').pack(pady=7)
+        
+        system_frame = tk.Frame(info_container, bg='#dcdad5', relief='raised', bd=0)
+        system_frame.pack(side='right', fill='both', expand=True, padx=(5, 10))
+        
+        system_title = tk.Label(system_frame, text="⚡ Estado del Sistema", 
+                            font=('Segoe UI', 12, 'bold'), bg='#dcdad5', fg='#1F0E45')
+        system_title.pack(anchor='w', padx=15, pady=(15, 10))
+        
+        # Información dinámica del sistema
+        fecha_actual = datetime.datetime.now().strftime("%d/%m/%Y")
+        hora_actual_str = datetime.datetime.now().strftime("%H:%M")
+        
+        system_info = [
+            f"Fecha actual: {fecha_actual}",
+            f"Hora: {hora_actual_str}",
+            f"Sesión iniciada: ✅ Activa",
+            f"Conexión BD: ✅ Estable"
+        ]
+        
+        for info in system_info:
+            label = tk.Label(system_frame, text=info, font=('Segoe UI', 10), 
+                            bg='#dcdad5', fg='#333333')
+            label.pack(anchor='w', padx=15, pady=2)
+        
+        tk.Label(system_frame, text="", bg='#dcdad5').pack(pady=7)
+        
+       
     
     def limpiar_area_trabajo(self):
         """Limpia el área de trabajo de forma segura"""
@@ -712,7 +769,7 @@ class GimnasioApp:
         if not self.verificar_permisos(['admin_principal']):
             return
         
-        self.activar_boton_menu(self.botones_menu[0])
+        self.activar_boton_por_comando(self.abrir_gestion_usuarios)
 
         self.mostrar_gestion_usuarios()
 
@@ -720,98 +777,121 @@ class GimnasioApp:
         """Muestra el módulo completo de gestión de usuarios"""
         self.limpiar_area_trabajo()
         
-        # Variables para el módulo
         self.usuarios_data = []
         self.usuario_seleccionado = None
         
-        # Título del módulo
         title_frame = ttk.Frame(self.work_frame)
         title_frame.pack(fill='x', pady=(0, 20))
         
+        title_container = ttk.Frame(title_frame)
+        title_container.pack(side='left')
+        
+        users_icon = self.crear_icono("users", tamaño=20, color="#1F0E45")
+        if users_icon:
+            icon_label = ttk.Label(title_container, image=users_icon)
+            icon_label.pack(side='left', padx=(0, 8))
+        
         title_label = ttk.Label(
-            title_frame,
-            text="👥 GESTIÓN DE USUARIOS",
+            title_container,
+            text="GESTIÓN DE USUARIOS",
             font=('Segoe UI', 18, 'bold')
         )
         title_label.pack(side='left')
         
-        # Botón de actualizar
+        refresh_icon = self.crear_icono("sync-alt", tamaño=16, color="black")
         refresh_btn = ttk.Button(
             title_frame,
-            text="🔄 Actualizar",
+            text="Actualizar",
+            image=refresh_icon,
+            compound='left',
             command=self.cargar_usuarios
         )
         refresh_btn.pack(side='right')
         
-        # Frame de controles
         controls_frame = ttk.Frame(self.work_frame)
         controls_frame.pack(fill='x', pady=(0, 10))
         
-        # Búsqueda
         search_frame = ttk.Frame(controls_frame)
         search_frame.pack(side='left', fill='x', expand=True)
         
-        ttk.Label(search_frame, text="🔍 Buscar:").pack(side='left', padx=(0, 5))
+        search_icon = self.crear_icono("search", tamaño=14, color="black")
+        if search_icon:
+            search_icon_label = ttk.Label(search_frame, image=search_icon)
+            search_icon_label.pack(side='left', padx=(0, 5))
+        
+        ttk.Label(search_frame, text="Buscar:").pack(side='left', padx=(0, 5))
         
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(search_frame, textvariable=self.search_var, width=30)
         self.search_entry.pack(side='left', padx=(0, 10))
         self.search_var.trace('w', self.filtrar_usuarios)
+
+        filter_icon = self.crear_icono("filter", tamaño=16, color="#1F0E45")
+        if filter_icon:
+            filter_icon_label = ttk.Label(search_frame, image=filter_icon)
+            filter_icon_label.pack(side='left', padx=(10, 5))
         
-        # Filtro por rol
-        ttk.Label(search_frame, text="🎭 Rol:").pack(side='left', padx=(10, 5))
+        ttk.Label(search_frame, text="Rol:").pack(side='left', padx=(0, 5))
         
         self.rol_filter_var = tk.StringVar(value="Todos")
         rol_combo = ttk.Combobox(
             search_frame, 
             textvariable=self.rol_filter_var,
-            values=["Todos", "admin_principal", "secretaria", "coach", "atleta"],
+            values=["Todos", "admin_principal", "secretaria", "coach"],
             state="readonly",
             width=15
         )
         rol_combo.pack(side='left')
         rol_combo.bind('<<ComboboxSelected>>', self.filtrar_usuarios)
         
-        # Botones de acción
         buttons_frame = ttk.Frame(controls_frame)
         buttons_frame.pack(side='right')
         
+        create_icon = self.crear_icono("user-plus", tamaño=16, color="black")
         self.create_btn = ttk.Button(
             buttons_frame,
-            text="➕ Crear Usuario",
+            text="Crear Usuario",
+            image=create_icon,
+            compound='left',
             command=self.crear_usuario
         )
         self.create_btn.pack(side='left', padx=2)
         
+        toggle_icon = self.crear_icono("toggle-on", tamaño=16, color="black")
         self.toggle_btn = ttk.Button(
             buttons_frame,
-            text="🔄 Activar/Desactivar",
+            text="Activar/Desactivar",
+            image=toggle_icon,
+            compound='left',
             command=self.toggle_usuario_estado,
             state='disabled'
         )
         self.toggle_btn.pack(side='left', padx=2)
 
-
+        edit_icon = self.crear_icono("edit", tamaño=16, color="black")
         self.edit_btn = ttk.Button(
             buttons_frame,
-            text="✏️ Editar", 
+            text="Editar",
+            image=edit_icon,
+            compound='left', 
             command=self.editar_usuario,
             state='disabled'
         )
         self.edit_btn.pack(side='left', padx=1)
 
-        self.toggle_btn = ttk.Button(
+        delete_icon = self.crear_icono("trash-alt", tamaño=16, color="black")
+        self.delete_btn = ttk.Button(
             buttons_frame,
-            text="🗑️ Eliminar",
+            text="Eliminar",
+            image=delete_icon,
+            compound='left',
             command=self.eliminar_usuario,
             state='disabled'
         )
-        self.toggle_btn.pack(side='left', padx=1)
+        self.delete_btn.pack(side='left', padx=1)
         
-        # Tabla de usuarios
         self.crear_tabla_usuarios()
         
-        # Cargar datos iniciales
         self.cargar_usuarios()
 
     def crear_tabla_usuarios(self):
@@ -861,11 +941,12 @@ class GimnasioApp:
             
             # Obtener usuarios del modelo
             usuarios = self.auth_controller.usuario_model.read_usuarios()
-            self.usuarios_data = usuarios
             
-            print(f"✅ Cargados {len(usuarios)} usuarios")
+            # Filtrar usuarios que NO sean atletas
+            usuarios_filtrados = [usuario for usuario in usuarios if usuario[8] != 'atleta']
             
-            # Actualizar tabla
+            self.usuarios_data = usuarios_filtrados
+        
             self.actualizar_tabla_usuarios()
             
         except Exception as e:
@@ -936,6 +1017,7 @@ class GimnasioApp:
             # Habilitar botones
             self.edit_btn.config(state='normal')
             self.toggle_btn.config(state='normal')
+            self.delete_btn.config(state='normal')
             
             # Obtener usuario seleccionado
             item = self.usuarios_tree.item(selection[0])
@@ -950,6 +1032,7 @@ class GimnasioApp:
             # Deshabilitar botones
             self.edit_btn.config(state='disabled')
             self.toggle_btn.config(state='disabled')
+            self.delete_btn.config(state='normal')
             self.usuario_seleccionado = None
 
     def crear_usuario(self):
@@ -983,7 +1066,6 @@ class GimnasioApp:
             self.user_controller.eliminar_usuario(user_id)
             messagebox.showinfo("Éxito", "Usuario eliminado exitosamente")
             self.cargar_usuarios()  
-
 
     def toggle_usuario_estado(self):
         """Activa/Desactiva el usuario seleccionado"""
@@ -1125,7 +1207,7 @@ class GimnasioApp:
                 combo = ttk.Combobox(
                     field_frame,
                     textvariable=self.form_vars[var_name],
-                    values=['admin_principal', 'secretaria', 'coach', 'atleta'],
+                    values=['admin_principal', 'secretaria', 'coach'],
                     state='readonly',
                     width=28
                 )
@@ -1233,71 +1315,77 @@ class GimnasioApp:
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
         
-        self.activar_boton_menu(self.botones_menu[1])
+        self.activar_boton_por_comando(self.abrir_gestion_atletas)
         
         self.mostrar_gestion_atletas()
 
     def mostrar_gestion_atletas(self):
-        """Muestra el módulo completo de gestión de atletas"""
         self.limpiar_area_trabajo()
         
-        # Variables para el módulo
         self.atletas_data = []
         self.atleta_seleccionado = None
         
-        # Título del módulo - CAMBIAR A tk.Frame con fondo gris
         title_frame = tk.Frame(self.work_frame, bg='#FFFFFF')
         title_frame.pack(fill='x', pady=(0, 20))
         
+        title_container = tk.Frame(title_frame, bg='#FFFFFF')
+        title_container.pack(side='left')
+        
+        running_icon = self.crear_icono("running", tamaño=20, color="#1F0E45")
+        if running_icon:
+            icon_label = tk.Label(title_container, image=running_icon, bg='#FFFFFF')
+            icon_label.pack(side='left', padx=(0, 8))
+        
         title_label = tk.Label(
-            title_frame,
-            text="🏃‍♂️ GESTIÓN DE ATLETAS",
+            title_container,
+            text="GESTIÓN DE ATLETAS",
             font=('Segoe UI', 18, 'bold'),
             bg='#FFFFFF',
             fg='#0F0F23'
         )
         title_label.pack(side='left')
         
-        # Botón de actualizar
+        refresh_icon = self.crear_icono("sync-alt", tamaño=16, color="black")
         refresh_btn = ttk.Button(
             title_frame,
-            text="🔄 Actualizar",
+            text="Actualizar",
+            image=refresh_icon,
+            compound='left',
             command=self.cargar_atletas
         )
         refresh_btn.pack(side='right')
         
-        # Frame de controles - CAMBIAR A tk.Frame con fondo gris
         controls_frame = tk.Frame(self.work_frame, bg='#FFFFFF')
         controls_frame.pack(fill='x', pady=(0, 10))
         
-        # Búsqueda y filtros
         self.crear_filtros_atletas(controls_frame)
-        
-        # Botones de acción
         self.crear_botones_atletas(controls_frame)
         
-        # Tabla de atletas
         self.crear_tabla_atletas()
-        
-        # Cargar datos iniciales
         self.cargar_atletas()
 
     def crear_filtros_atletas(self, parent):
-        """Crea los filtros de búsqueda para atletas"""
-        # Frame de búsqueda
         search_frame = ttk.Frame(parent)
         search_frame.pack(side='left', fill='x', expand=True)
         
-        # Búsqueda por texto
-        ttk.Label(search_frame, text="🔍 Buscar:").pack(side='left', padx=(0, 5))
+        search_icon = self.crear_icono("search", tamaño=14, color="black")
+        if search_icon:
+            search_icon_label = ttk.Label(search_frame, image=search_icon)
+            search_icon_label.pack(side='left', padx=(0, 5))
+        
+        ttk.Label(search_frame, text="Buscar:").pack(side='left', padx=(0, 5))
         
         self.search_atletas_var = tk.StringVar()
         self.search_atletas_entry = ttk.Entry(search_frame, textvariable=self.search_atletas_var, width=25)
         self.search_atletas_entry.pack(side='left', padx=(0, 10))
         self.search_atletas_var.trace('w', self.filtrar_atletas)
         
-        # Filtro por estado de solvencia
-        ttk.Label(search_frame, text="💰 Estado:").pack(side='left', padx=(10, 5))
+        money_icon = self.crear_icono("dollar-sign", tamaño=14, color="black")
+        if money_icon:
+            money_icon_label = ttk.Label(search_frame, image=money_icon)
+            money_icon_label.pack(side='left', padx=(10, 5))
+        
+        ttk.Label(search_frame, text="Estado:").pack(side='left', padx=(0, 5))
         
         self.estado_filter_var = tk.StringVar(value="Todos")
         estado_combo = ttk.Combobox(
@@ -1310,8 +1398,12 @@ class GimnasioApp:
         estado_combo.pack(side='left', padx=(0, 10))
         estado_combo.bind('<<ComboboxSelected>>', self.filtrar_atletas)
         
-        # Filtro por coach
-        ttk.Label(search_frame, text="💪 Coach:").pack(side='left', padx=(10, 5))
+        coach_icon = self.crear_icono("user-tie", tamaño=14, color="black")
+        if coach_icon:
+            coach_icon_label = ttk.Label(search_frame, image=coach_icon)
+            coach_icon_label.pack(side='left', padx=(10, 5))
+        
+        ttk.Label(search_frame, text="Coach:").pack(side='left', padx=(0, 5))
         
         self.coach_filter_var = tk.StringVar(value="Todos")
         self.coach_combo = ttk.Combobox(
@@ -1324,40 +1416,47 @@ class GimnasioApp:
         self.coach_combo.bind('<<ComboboxSelected>>', self.filtrar_atletas)
 
     def crear_botones_atletas(self, parent):
-        """Crea los botones de acción para atletas"""
         buttons_frame = ttk.Frame(parent)
         buttons_frame.pack(side='right')
         
-        # Botón crear atleta
+        create_icon = self.crear_icono("user-plus", tamaño=16, color="black")
         self.create_atleta_btn = ttk.Button(
             buttons_frame,
-            text="➕ Registrar Atleta",
+            text="Registrar Atleta",
+            image=create_icon,
+            compound='left',
             command=self.registrar_atleta
         )
         self.create_atleta_btn.pack(side='left', padx=2)
         
-        # Botón editar
+        edit_icon = self.crear_icono("edit", tamaño=16, color="black")
         self.edit_atleta_btn = ttk.Button(
             buttons_frame,
-            text="✏️ Editar Perfil",
+            text="Editar",
+            image=edit_icon,
+            compound='left',
             command=self.editar_atleta,
             state='disabled'
         )
         self.edit_atleta_btn.pack(side='left', padx=2)
         
-        # Botón renovar membresía
+        renew_icon = self.crear_icono("redo", tamaño=16, color="black")
         self.renovar_btn = ttk.Button(
             buttons_frame,
-            text="🔄 Renovar Membresía",
+            text="Renovar Plan",
+            image=renew_icon,
+            compound='left',
             command=self.renovar_membresia,
             state='disabled'
         )
         self.renovar_btn.pack(side='left', padx=2)
         
-        # Botón asignar coach
+        assign_icon = self.crear_icono("user-tie", tamaño=16, color="black")
         self.assign_coach_btn = ttk.Button(
             buttons_frame,
-            text="💪 Asignar Coach",
+            text="Asignar Coach",
+            image=assign_icon,
+            compound='left',
             command=self.asignar_coach,
             state='disabled'
         )
@@ -1386,12 +1485,12 @@ class GimnasioApp:
         
         # Configurar anchos
         self.atletas_tree.column('ID', width=50, anchor='center')
-        self.atletas_tree.column('Nombre', width=100)
-        self.atletas_tree.column('Apellido', width=100)
-        self.atletas_tree.column('Cédula', width=100)
-        self.atletas_tree.column('Email', width=180)
-        self.atletas_tree.column('Plan', width=100)
-        self.atletas_tree.column('Coach', width=120)
+        self.atletas_tree.column('Nombre', width=100, anchor='center')
+        self.atletas_tree.column('Apellido', width=100, anchor='center')
+        self.atletas_tree.column('Cédula', width=100, anchor='center')
+        self.atletas_tree.column('Email', width=150, anchor='center')
+        self.atletas_tree.column('Plan', width=100, anchor='center')
+        self.atletas_tree.column('Coach', width=120, anchor='center')
         self.atletas_tree.column('Estado', width=80, anchor='center')
         self.atletas_tree.column('Vencimiento', width=100, anchor='center')
         
@@ -1644,7 +1743,6 @@ class GimnasioApp:
         ttk.Button(btn_frame, text="✅ Renovar", command=procesar_renovacion).pack(side='left', padx=5)
         ttk.Button(btn_frame, text="❌ Cancelar", command=ventana.destroy).pack(side='left', padx=5)
 
-    
     def asignar_coach(self):
         """Abre diálogo para asignar coach con lista de disponibles"""
         if not self.atleta_seleccionado:
@@ -1666,7 +1764,7 @@ class GimnasioApp:
         # Crear ventana modal para selección
         coach_window = tk.Toplevel(self.root)
         coach_window.title("Asignar Coach")
-        coach_window.geometry("500x400")
+        coach_window.geometry("600x500")
         coach_window.transient(self.root)
         coach_window.grab_set()
         
@@ -1678,7 +1776,7 @@ class GimnasioApp:
         main_frame = ttk.Frame(coach_window, padding=20)
         main_frame.pack(fill='both', expand=True)
         
-        # Título
+        
         atleta_data = self.atleta_seleccionado['atleta_data']
         usuario_data = self.atleta_seleccionado['usuario_data']
         
@@ -1686,16 +1784,14 @@ class GimnasioApp:
                 text=f"Asignar Coach a: {usuario_data[1]} {usuario_data[2]}", 
                 font=('Segoe UI', 14, 'bold')).pack(pady=(0, 20))
         
-        # Lista de coaches
         ttk.Label(main_frame, text="Selecciona un Coach:", font=('Segoe UI', 12)).pack(anchor='w', pady=(0, 10))
         
-        # Frame para lista
         list_frame = ttk.Frame(main_frame)
         list_frame.pack(fill='both', expand=True, pady=(0, 20))
         
         # Crear Treeview
         columns = ('Coach', 'Especialidades', 'Horario')
-        coaches_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=10)
+        coaches_tree = ttk.Treeview(list_frame, columns=columns, show='headings', height=5)
         
         coaches_tree.heading('Coach', text='Coach')
         coaches_tree.heading('Especialidades', text='Especialidades')
@@ -1782,7 +1878,6 @@ class GimnasioApp:
         asignar_btn = ttk.Button(buttons_frame, text="✅ Asignar Coach", command=asignar_coach_seleccionado, state='disabled')
         asignar_btn.pack(side='right', padx=(5, 0))
 
-
     def abrir_formulario_atleta(self, modo='registrar', atleta=None):
         """Abre el formulario modal para registrar/editar atleta con scrollbar"""
         # Crear ventana modal
@@ -1793,7 +1888,7 @@ class GimnasioApp:
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
         window_width = int(screen_width * 0.6)  
-        window_height = int(screen_height * 0.9)  
+        window_height = int(screen_height * 0.7)  
 
         self.atleta_form_window.geometry(f"{window_width}x{window_height}")
         self.atleta_form_window.resizable(True, True)
@@ -2210,7 +2305,7 @@ class GimnasioApp:
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
         
-        self.activar_boton_menu(self.botones_menu[2])
+        self.activar_boton_por_comando(self.abrir_gestion_coaches)
 
         self.mostrar_gestion_coaches()
 
@@ -2218,25 +2313,35 @@ class GimnasioApp:
         """Muestra el módulo completo de gestión de coaches"""
         self.limpiar_area_trabajo()
         
-        # Variables para el módulo
         self.coaches_data = []
         self.coach_seleccionado = None
         
-        # Título del módulo
         title_frame = ttk.Frame(self.work_frame)
         title_frame.pack(fill='x', pady=(0, 20))
         
+        title_container = ttk.Frame(title_frame)
+        title_container.pack(side='left')
+        
+        # Icono para el título
+        coach_icon = self.crear_icono("user-tie", tamaño=20, color="#1F0E45")
+        if coach_icon:
+            icon_label = ttk.Label(title_container, image=coach_icon)
+            icon_label.pack(side='left', padx=(0, 8))
+        
         title_label = ttk.Label(
-            title_frame,
-            text="👨‍🏫 GESTIÓN PROFESIONAL DE COACHES",
+            title_container,
+            text="GESTIÓN PROFESIONAL DE COACHES",
             font=('Segoe UI', 18, 'bold')
         )
         title_label.pack(side='left')
         
-        # Botón de actualizar
+        # Botón de actualizar con icono
+        refresh_icon = self.crear_icono("sync-alt", tamaño=16, color="black")
         refresh_btn = ttk.Button(
             title_frame,
-            text="🔄 Actualizar",
+            text="Actualizar",
+            image=refresh_icon,
+            compound='left',
             command=self.cargar_coaches
         )
         refresh_btn.pack(side='right')
@@ -2249,45 +2354,57 @@ class GimnasioApp:
         search_frame = ttk.Frame(controls_frame)
         search_frame.pack(side='left', fill='x', expand=True)
         
-        ttk.Label(search_frame, text="🔍 Buscar:").pack(side='left', padx=(0, 5))
+        # Icono de búsqueda
+        search_icon = self.crear_icono("search", tamaño=14, color="black")
+        if search_icon:
+            search_icon_label = ttk.Label(search_frame, image=search_icon)
+            search_icon_label.pack(side='left', padx=(0, 5))
+        
+        ttk.Label(search_frame, text="Buscar:").pack(side='left', padx=(0, 5))
         
         self.search_coaches_var = tk.StringVar()
         self.search_coaches_entry = ttk.Entry(search_frame, textvariable=self.search_coaches_var, width=25)
         self.search_coaches_entry.pack(side='left', padx=(0, 10))
         self.search_coaches_var.trace('w', self.filtrar_coaches)
         
-        # Botones de acción AJUSTADOS
         buttons_frame = ttk.Frame(controls_frame)
         buttons_frame.pack(side='right')
         
+        edit_icon = self.crear_icono("edit", tamaño=16, color="black")
         self.edit_coach_btn = ttk.Button(
             buttons_frame,
-            text="✏️ Editar Perfil",
+            text="Editar Perfil",
+            image=edit_icon,
+            compound='left',
             command=self.editar_perfil_coach,
             state='disabled'
         )
         self.edit_coach_btn.pack(side='left', padx=2)
         
+        assign_icon = self.crear_icono("users", tamaño=16, color="black")
         self.asignaciones_btn = ttk.Button(
             buttons_frame,
-            text="👥 Gestionar Asignaciones",
+            text="Gestionar Asignaciones",
+            image=assign_icon,
+            compound='left',
             command=self.gestionar_asignaciones_coach,
             state='disabled'
         )
         self.asignaciones_btn.pack(side='left', padx=2)
         
+        stats_icon = self.crear_icono("chart-bar", tamaño=16, color="black")
         self.estadisticas_btn = ttk.Button(
             buttons_frame,
-            text="📊 Ver Estadísticas",
+            text="Ver Estadísticas",
+            image=stats_icon,
+            compound='left',
             command=self.ver_estadisticas_coach,
             state='disabled'
         )
         self.estadisticas_btn.pack(side='left', padx=2)
         
-        # Tabla de coaches (sin cambios)
         self.crear_tabla_coaches()
         
-        # Cargar datos iniciales
         self.cargar_coaches()
 
     def on_coach_selected(self, event):
@@ -2584,7 +2701,6 @@ class GimnasioApp:
             print(f"❌ Error cargando coaches: {e}")
             messagebox.showerror("Error", f"Error al cargar coaches:\n{e}")
 
-
     def _obtener_atletas_por_coach_directo(self, coach_id):
         """Obtiene atletas asignados a un coach específico"""
         try:
@@ -2660,9 +2776,9 @@ class GimnasioApp:
         
         # Configurar anchos
         self.coaches_tree.column('ID', width=50, anchor='center')
-        self.coaches_tree.column('Nombre Completo', width=150)
-        self.coaches_tree.column('Email', width=180)
-        self.coaches_tree.column('Especialidades', width=150)
+        self.coaches_tree.column('Nombre Completo', width=150, anchor='center')
+        self.coaches_tree.column('Email', width=180, anchor='center')
+        self.coaches_tree.column('Especialidades', width=150, anchor='center')
         self.coaches_tree.column('Salario', width=100, anchor='center')
         self.coaches_tree.column('Atletas Asignados', width=120, anchor='center')
         self.coaches_tree.column('Fecha Contratación', width=120, anchor='center')
@@ -2794,11 +2910,10 @@ class GimnasioApp:
         
     def abrir_gestion_pagos(self):
          """Abre la gestión de pagos"""
-        # Se agrega la verificación de permisos y se indenta la línea siguiente
          if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
          
-         self.activar_boton_menu(self.botones_menu[3])
+         self.activar_boton_por_comando(self.abrir_gestion_pagos)
 
          self.mostrar_gestion_pagos()
 
@@ -2809,32 +2924,39 @@ class GimnasioApp:
         self.pagos_data = []
         self.pago_seleccionado = None
         
-        # Título del módulo
         title_frame = ttk.Frame(self.work_frame)
         title_frame.pack(fill='x', pady=(0, 20))
         
+        title_container = ttk.Frame(title_frame)
+        title_container.pack(side='left')
+        
+        money_icon = self.crear_icono("dollar-sign", tamaño=20, color="#1F0E45")
+        if money_icon:
+            icon_label = ttk.Label(title_container, image=money_icon)
+            icon_label.pack(side='left', padx=(0, 8))
+        
         ttk.Label(
-            title_frame,
-            text="💰 GESTIÓN DE PAGOS",
+            title_container,
+            text="GESTIÓN DE PAGOS",
             font=('Segoe UI', 18, 'bold')
         ).pack(side='left')
         
+        refresh_icon = self.crear_icono("sync-alt", tamaño=16, color="black")
         ttk.Button(
             title_frame,
-            text="🔄 Actualizar",
+            text="Actualizar",
+            image=refresh_icon,
+            compound='left',
             command=self.cargar_pagos
         ).pack(side='right')
         
-        # Frame de controles y filtros
         controls_frame = ttk.Frame(self.work_frame)
         controls_frame.pack(fill='x', pady=(0, 10))
         
         self.crear_filtros_pagos(controls_frame)
         
-        # Tabla de pagos
         self.crear_tabla_pagos()
         
-        # Cargar datos iniciales
         self.cargar_pagos()
         
     def crear_filtros_pagos(self, parent):
@@ -2842,14 +2964,17 @@ class GimnasioApp:
         filter_frame = ttk.Frame(parent)
         filter_frame.pack(fill='x')
 
-        # Búsqueda por texto
-        ttk.Label(filter_frame, text="🔍 Buscar (Atleta/Desc):").pack(side='left', padx=(0, 5))
+        search_icon = self.crear_icono("search", tamaño=14, color="black")
+        if search_icon:
+            search_icon_label = ttk.Label(filter_frame, image=search_icon)
+            search_icon_label.pack(side='left', padx=(0, 5))
+        
+        ttk.Label(filter_frame, text="Buscar (Atleta/Desc):").pack(side='left', padx=(0, 5))
         self.search_pagos_var = tk.StringVar()
         search_entry = ttk.Entry(filter_frame, textvariable=self.search_pagos_var, width=20)
         search_entry.pack(side='left', padx=(0, 15))
         self.search_pagos_var.trace('w', self.filtrar_pagos)
 
-        # Filtro por tipo de pago
         ttk.Label(filter_frame, text="Tipo Pago:").pack(side='left', padx=(0, 5))
         self.tipo_pago_filter_var = tk.StringVar(value="Todos")
         tipo_pago_combo = ttk.Combobox(
@@ -2861,35 +2986,39 @@ class GimnasioApp:
         tipo_pago_combo.pack(side='left', padx=(0, 15))
         tipo_pago_combo.bind('<<ComboboxSelected>>', self.filtrar_pagos)
 
-        # REEMPLAZAR DateEntry por Entry simple
-        ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(10, 5))
+        calendar_icon = self.crear_icono("calendar-alt", tamaño=14, color="black")
+        if calendar_icon:
+            calendar_icon_label = ttk.Label(filter_frame, image=calendar_icon)
+            calendar_icon_label.pack(side='left', padx=(10, 5))
+        
+        ttk.Label(filter_frame, text="Desde:").pack(side='left', padx=(0, 5))
         self.fecha_desde_var = tk.StringVar()
         self.fecha_desde_entry = ttk.Entry(filter_frame, textvariable=self.fecha_desde_var, width=12)
         self.fecha_desde_entry.pack(side='left', padx=(0, 5))
         
-        # Valor por defecto (hace 30 días)
         fecha_default = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         self.fecha_desde_var.set(fecha_default)
-        
-        ttk.Label(filter_frame, text="(YYYY-MM-DD)", font=('Segoe UI', 8)).pack(side='left', padx=(0, 10))
 
         ttk.Label(filter_frame, text="Hasta:").pack(side='left', padx=(0, 5))
         self.fecha_hasta_var = tk.StringVar()
         self.fecha_hasta_entry = ttk.Entry(filter_frame, textvariable=self.fecha_hasta_var, width=12)
         self.fecha_hasta_entry.pack(side='left', padx=(0, 5))
         
-        # Valor por defecto (hoy)
         self.fecha_hasta_var.set(datetime.now().strftime('%Y-%m-%d'))
         
         ttk.Label(filter_frame, text="(YYYY-MM-DD)", font=('Segoe UI', 8)).pack(side='left', padx=(0, 10))
 
-        ttk.Button(filter_frame, text="🔍 Aplicar Fechas", command=self.filtrar_pagos).pack(side='left', padx=(0,20))
+        ttk.Button(filter_frame, text="Aplicar Fecha", compound='left', command=self.filtrar_pagos).pack(side='left', padx=(0,20))
 
-        # Botones de Editar y Eliminar
-        self.edit_pago_btn = ttk.Button(filter_frame, text="✏️ Editar Pago", command=self._editar_pago_action, state='disabled')
+        buttons_right = ttk.Frame(filter_frame)
+        buttons_right.pack(side='right')
+
+        edit_icon = self.crear_icono("edit", tamaño=16, color="black")
+        self.edit_pago_btn = ttk.Button(buttons_right, text="Editar", image=edit_icon, compound='left', command=self._editar_pago_action, state='disabled')
         self.edit_pago_btn.pack(side='left', padx=5)
 
-        self.delete_pago_btn = ttk.Button(filter_frame, text="🗑️ Eliminar Pago", command=self._eliminar_pago_action, state='disabled')
+        delete_icon = self.crear_icono("trash-alt", tamaño=16, color="black")
+        self.delete_pago_btn = ttk.Button(buttons_right, text="Eliminar", image=delete_icon, compound='left', command=self._eliminar_pago_action, state='disabled')
         self.delete_pago_btn.pack(side='left', padx=5)
    
     def cargar_pagos(self):
@@ -2917,9 +3046,9 @@ class GimnasioApp:
         
         for col, width in col_widths.items():
             self.pagos_tree.heading(col, text=col)
-            self.pagos_tree.column(col, width=width, anchor='w')
+            self.pagos_tree.column(col, width=width, anchor='center')
         
-        self.pagos_tree.column('Monto', anchor='e')
+        self.pagos_tree.column('Monto', anchor='center')
 
         v_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=self.pagos_tree.yview)
         self.pagos_tree.configure(yscrollcommand=v_scroll.set)
@@ -2997,7 +3126,6 @@ class GimnasioApp:
         search_text = self.search_pagos_var.get().lower()
         tipo_pago_filter = self.tipo_pago_filter_var.get()
         
-        # Validación segura de fechas
         fecha_desde = None
         fecha_hasta = None
         
@@ -3173,83 +3301,90 @@ class GimnasioApp:
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
         
-        self.activar_boton_menu(self.botones_menu[5])
+        self.activar_boton_por_comando(self.abrir_reportes)
 
         self.mostrar_reportes_financieros()
 
+    
     def mostrar_reportes_financieros(self):
-        """Crea y muestra la interfaz para el módulo de Reportes Financieros - VERSIÓN OPTIMIZADA"""
         self.limpiar_area_trabajo()
 
-        # Título del módulo
         title_frame = ttk.Frame(self.work_frame)
         title_frame.pack(fill='x', pady=(0, 15))
         
         ttk.Label(title_frame, text="📊 REPORTES FINANCIEROS", 
                 font=('Segoe UI', 18, 'bold')).pack(side='left')
 
-        # --- Frame de Filtros SIMPLIFICADO ---
-        filter_frame = ttk.LabelFrame(self.work_frame, text="Período de Análisis", padding=10)
-        filter_frame.pack(fill='x', pady=(0, 15))
+        filter_frame = tk.Frame(self.work_frame, bg='#dcdad5', relief='raised', bd=0)
+        filter_frame.pack(fill='x', pady=(0, 15), padx=5)
 
-        # Una sola fila para fechas
-        dates_frame = ttk.Frame(filter_frame)
-        dates_frame.pack()
+        header_container = tk.Frame(filter_frame, bg='#dcdad5')
+        header_container.pack(fill='x', padx=10, pady=10)
 
-        ttk.Label(dates_frame, text="Desde:").pack(side='left', padx=(0, 5))
+        title_filter = tk.Label(header_container, text="Período de Análisis", 
+                            font=('Segoe UI', 11, 'bold'), bg='#dcdad5', fg='#0F0F23')
+        title_filter.pack(side='left')
+
+        dates_frame = tk.Frame(header_container, bg='#dcdad5')
+        dates_frame.pack(side='right')
+
+        tk.Label(dates_frame, text="Desde:", bg='#dcdad5').pack(side='left', padx=(0, 5))
         self.reporte_fecha_desde_var = tk.StringVar()
-        self.reporte_fecha_desde_entry = ttk.Entry(dates_frame, textvariable=self.reporte_fecha_desde_var, width=12)
+        self.reporte_fecha_desde_entry = tk.Entry(dates_frame, textvariable=self.reporte_fecha_desde_var, width=12, bg='#FFFFFF')
         self.reporte_fecha_desde_entry.pack(side='left', padx=(0, 20))
         
-        # Valor por defecto
         self.reporte_fecha_desde_var.set((datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
 
-        ttk.Label(dates_frame, text="Hasta:").pack(side='left', padx=(0, 5))
+        tk.Label(dates_frame, text="Hasta:", bg='#dcdad5').pack(side='left', padx=(0, 5))
         self.reporte_fecha_hasta_var = tk.StringVar()
-        self.reporte_fecha_hasta_entry = ttk.Entry(dates_frame, textvariable=self.reporte_fecha_hasta_var, width=12)
+        self.reporte_fecha_hasta_entry = tk.Entry(dates_frame, textvariable=self.reporte_fecha_hasta_var, width=12, bg='#FFFFFF')
         self.reporte_fecha_hasta_entry.pack(side='left', padx=(0, 20))
         
-        # Valor por defecto
         self.reporte_fecha_hasta_var.set(datetime.now().strftime('%Y-%m-%d'))
 
         ttk.Button(dates_frame, text="📈 Generar Reporte", 
                 command=self._generar_y_mostrar_reporte_action).pack(side='left', padx=(20, 0))
 
-        ttk.Separator(self.work_frame, orient='horizontal').pack(fill='x', pady=10)
+       
 
-        # --- Frame de Resumen SIMPLIFICADO ---
-        resumen_frame = ttk.LabelFrame(self.work_frame, text="Resumen del Período", padding=15)
-        resumen_frame.pack(fill='x', pady=(0, 15))
+        resumen_frame = tk.Frame(self.work_frame, bg='#dcdad5', relief='raised', bd=0)
+        resumen_frame.pack(fill='x', pady=(0, 15), padx=5)
 
-        # Labels directos en lugar de StringVars
-        self.resumen_ingresos_label = ttk.Label(resumen_frame, text="Total Ingresos: $0.00", 
-                                            font=('Segoe UI', 12, 'bold'), foreground='green')
-        self.resumen_ingresos_label.pack(side='left', padx=20)
+        title_resumen = tk.Label(resumen_frame, text="Resumen del Período", 
+                            font=('Segoe UI', 11, 'bold'), bg='#dcdad5', fg='#0F0F23')
+        title_resumen.pack(anchor='w', padx=(10, 0), pady=(10, 5))
 
-        self.resumen_egresos_label = ttk.Label(resumen_frame, text="Total Egresos: $0.00", 
-                                            font=('Segoe UI', 12, 'bold'), foreground='red')
+        content_resumen = tk.Frame(resumen_frame, bg='#dcdad5')
+        content_resumen.pack(fill='x', padx=15, pady=(0, 15))
+
+        self.resumen_ingresos_label = tk.Label(content_resumen, text="Total Ingresos: $0.00", 
+                                            font=('Segoe UI', 12, 'bold'), bg='#FFFFFF', fg='green')
+        self.resumen_ingresos_label.pack(side='left', padx=0)
+
+        self.resumen_egresos_label = tk.Label(content_resumen, text="Total Egresos: $0.00", 
+                                            font=('Segoe UI', 12, 'bold'), bg='#FFFFFF', fg='red')
         self.resumen_egresos_label.pack(side='left', padx=20)
 
-        self.resumen_balance_label = ttk.Label(resumen_frame, text="Balance: $0.00", 
-                                            font=('Segoe UI', 14, 'bold'), foreground='blue')
+        self.resumen_balance_label = tk.Label(
+            content_resumen, text="Balance: $0.00", 
+            font=('Segoe UI', 14, 'bold'),
+            bg='#FFFFFF', fg='blue')
+        
         self.resumen_balance_label.pack(side='right', padx=20)
 
-        # --- Frame de Detalles SIMPLIFICADO (Una sola tabla) ---
         details_frame = ttk.LabelFrame(self.work_frame, text="Desglose Detallado", padding=10)
         details_frame.pack(fill='both', expand=True, pady=10)
 
-        # Una sola tabla para todo
         columns = ('Categoría', 'Tipo', 'Monto')
         self.reporte_detalles_tree = ttk.Treeview(details_frame, columns=columns, show='headings')
         
         for col in columns:
             self.reporte_detalles_tree.heading(col, text=col)
         
-        self.reporte_detalles_tree.column('Categoría', width=120)
-        self.reporte_detalles_tree.column('Tipo', width=200)
-        self.reporte_detalles_tree.column('Monto', width=120, anchor='e')
+        self.reporte_detalles_tree.column('Categoría', width=120, anchor='center')
+        self.reporte_detalles_tree.column('Tipo', width=200, anchor='center')
+        self.reporte_detalles_tree.column('Monto', width=120, anchor='center')
 
-        # Scrollbar
         scrollbar_detalles = ttk.Scrollbar(details_frame, orient='vertical', 
                                         command=self.reporte_detalles_tree.yview)
         self.reporte_detalles_tree.configure(yscrollcommand=scrollbar_detalles.set)
@@ -3257,13 +3392,11 @@ class GimnasioApp:
         self.reporte_detalles_tree.pack(side='left', fill='both', expand=True)
         scrollbar_detalles.pack(side='right', fill='y')
 
-        # Generar reporte inicial
         self._generar_y_mostrar_reporte_action()
-    
+
     def _generar_y_mostrar_reporte_action(self):
         """Función que llama al controlador y actualiza la UI del reporte - VERSIÓN OPTIMIZADA"""
         
-        # Validación de fechas
         try:
             fecha_inicio_str = self.reporte_fecha_desde_var.get().strip()
             fecha_fin_str = self.reporte_fecha_hasta_var.get().strip()
@@ -3323,8 +3456,10 @@ class GimnasioApp:
 
     def mostrar_mis_atletas_coach(self):
         """Muestra la vista COMPLETA de atletas para coach - VERSIÓN FINAL"""
+        self.activar_boton_por_comando(self.mostrar_mis_atletas_coach)
+
         self.limpiar_area_trabajo()
-        
+
         # Variables para el módulo
         self.mis_atletas_data = []
         self.mi_atleta_seleccionado = None
@@ -3604,7 +3739,6 @@ class GimnasioApp:
         buttons_frame = ttk.Frame(parent)
         buttons_frame.pack(side='right')
         
-        # Solo botones de visualización, NO de edición
         self.ver_perfil_btn = ttk.Button(
             buttons_frame,
             text="👁️ Ver Perfil Completo",
@@ -3910,7 +4044,6 @@ class GimnasioApp:
         """Muestra un mensaje para módulos pendientes de implementar"""
         self.limpiar_area_trabajo()
         
-        # Título del módulo
         title_label = ttk.Label(
             self.work_frame,
             text=titulo,
@@ -3918,7 +4051,6 @@ class GimnasioApp:
         )
         title_label.pack(pady=(30, 20))
         
-        # Descripción
         desc_label = ttk.Label(
             self.work_frame,
             text=descripcion,
@@ -3927,7 +4059,6 @@ class GimnasioApp:
         )
         desc_label.pack(pady=(0, 30))
         
-        # Mensaje de desarrollo
         dev_label = ttk.Label(
             self.work_frame,
             text="🚧 MÓDULO EN DESARROLLO 🚧\n\nEsta funcionalidad se implementará próximamente.",
@@ -3937,7 +4068,6 @@ class GimnasioApp:
         )
         dev_label.pack(pady=20)
         
-        # Botón para volver al dashboard
         back_btn = ttk.Button(
             self.work_frame,
             text="🏠 Volver al Dashboard",
@@ -3951,8 +4081,8 @@ class GimnasioApp:
         """Abre la gestión de rutinas"""
         if not self.verificar_permisos(['admin_principal', 'coach']):
             return
-        
-        self.activar_boton_menu(self.botones_menu[6])
+
+        self.activar_boton_por_comando(self.abrir_gestion_rutinas)
 
         self.mostrar_gestion_rutinas()
 
@@ -3960,43 +4090,46 @@ class GimnasioApp:
         """Muestra el módulo completo de gestión de rutinas"""
         self.limpiar_area_trabajo()
         
-        # Variables para el módulo
         self.rutinas_data = []
         self.rutina_seleccionada = None
         
-        # Título del módulo
         title_frame = ttk.Frame(self.work_frame)
         title_frame.pack(fill='x', pady=(0, 20))
         
+        title_container = ttk.Frame(title_frame)
+        title_container.pack(side='left')
+        
+        dumbbell_icon = self.crear_icono("dumbbell", tamaño=20, color="#1F0E45")
+        if dumbbell_icon:
+            icon_label = ttk.Label(title_container, image=dumbbell_icon)
+            icon_label.pack(side='left', padx=(0, 8))
+        
         title_label = ttk.Label(
-            title_frame,
-            text="🏃‍♂️ GESTIÓN DE RUTINAS",
+            title_container,
+            text="GESTIÓN DE RUTINAS",
             font=('Segoe UI', 18, 'bold')
         )
         title_label.pack(side='left')
         
-        # Botón de actualizar
+        refresh_icon = self.crear_icono("sync-alt", tamaño=16, color="black")
         refresh_btn = ttk.Button(
             title_frame,
-            text="🔄 Actualizar",
+            text="Actualizar",
+            image=refresh_icon,
+            compound='left',
             command=self.cargar_rutinas
         )
         refresh_btn.pack(side='right')
         
-        # Frame de controles
         controls_frame = ttk.Frame(self.work_frame)
         controls_frame.pack(fill='x', pady=(0, 10))
         
-        # Búsqueda y filtros
         self.crear_filtros_rutinas(controls_frame)
         
-        # Botones de acción
         self.crear_botones_rutinas(controls_frame)
         
-        # Tabla de rutinas
         self.crear_tabla_rutinas()
         
-        # Cargar datos iniciales
         self.cargar_rutinas()
 
     def crear_filtros_rutinas(self, parent):
@@ -4004,16 +4137,24 @@ class GimnasioApp:
         search_frame = ttk.Frame(parent)
         search_frame.pack(side='left', fill='x', expand=True)
         
-        # Búsqueda por texto
-        ttk.Label(search_frame, text="🔍 Buscar:").pack(side='left', padx=(0, 5))
+        search_icon = self.crear_icono("search", tamaño=14, color="black")
+        if search_icon:
+            search_icon_label = ttk.Label(search_frame, image=search_icon)
+            search_icon_label.pack(side='left', padx=(0, 5))
+        
+        ttk.Label(search_frame, text="Buscar:").pack(side='left', padx=(0, 5))
         
         self.search_rutinas_var = tk.StringVar()
         self.search_rutinas_entry = ttk.Entry(search_frame, textvariable=self.search_rutinas_var, width=25)
         self.search_rutinas_entry.pack(side='left', padx=(0, 10))
         self.search_rutinas_var.trace('w', self.filtrar_rutinas)
         
-        # Filtro por nivel
-        ttk.Label(search_frame, text="📊 Nivel:").pack(side='left', padx=(10, 5))
+        level_icon = self.crear_icono("chart-bar", tamaño=14, color="black")
+        if level_icon:
+            level_icon_label = ttk.Label(search_frame, image=level_icon)
+            level_icon_label.pack(side='left', padx=(10, 5))
+        
+        ttk.Label(search_frame, text="Nivel:").pack(side='left', padx=(0, 5))
         
         self.nivel_filter_var = tk.StringVar(value="Todos")
         nivel_combo = ttk.Combobox(
@@ -4031,70 +4172,74 @@ class GimnasioApp:
         buttons_frame = ttk.Frame(parent)
         buttons_frame.pack(side='right')
         
-        # Botón crear rutina
+      
         self.create_rutina_btn = ttk.Button(
             buttons_frame,
             text="➕ Crear Rutina",
+            compound='left',
             command=self.crear_rutina
         )
         self.create_rutina_btn.pack(side='left', padx=2)
         
-        # Botón ver rutina completa
+        view_icon = self.crear_icono("eye", tamaño=16, color="black")
         self.view_rutina_btn = ttk.Button(
             buttons_frame,
-            text="👁️ Ver Rutina",
+            text="Ver Rutina",
+            image=view_icon,
+            compound='left',
             command=self.ver_rutina_completa,
             state='disabled'
         )
         self.view_rutina_btn.pack(side='left', padx=2)
         
-        # Botón editar rutina
+        edit_icon = self.crear_icono("edit", tamaño=16, color="black")
         self.edit_rutina_btn = ttk.Button(
             buttons_frame,
-            text="✏️ Editar",
+            text="Editar",
+            image=edit_icon,
+            compound='left',
             command=self.editar_rutina,
             state='disabled'
         )
         self.edit_rutina_btn.pack(side='left', padx=2)
 
+        delete_icon = self.crear_icono("trash-alt", tamaño=16, color="black")
         self.delete_rutina_btn = ttk.Button(
             buttons_frame,
-            text="🗑️ Eliminar",
+            text="Eliminar",
+            image=delete_icon,
+            compound='left',
             command=self.eliminar_rutina,
             state='disabled'
         )
         self.delete_rutina_btn.pack(side='left', padx=2)
+
 
     def crear_tabla_rutinas(self):
         """Crea la tabla de rutinas con Treeview"""
         table_frame = ttk.Frame(self.work_frame)
         table_frame.pack(fill='both', expand=True, pady=10)
         
-        # Configurar Treeview
         columns = ('ID', 'Nombre', 'Nivel', 'Ejercicios', 'Creado Por', 'Fecha Creación')
         self.rutinas_tree = ttk.Treeview(table_frame, columns=columns, show='headings', height=15)
         
-        # Configurar encabezados
         self.rutinas_tree.heading('ID', text='ID')
         self.rutinas_tree.heading('Nombre', text='Nombre Rutina')
         self.rutinas_tree.heading('Nivel', text='Nivel')
-        self.rutinas_tree.heading('Ejercicios', text='# Ejercicios')
+        self.rutinas_tree.heading('Ejercicios', text='Ejercicios')
         self.rutinas_tree.heading('Creado Por', text='Creado Por')
         self.rutinas_tree.heading('Fecha Creación', text='Fecha Creación')
         
-        # Configurar anchos
         self.rutinas_tree.column('ID', width=50, anchor='center')
-        self.rutinas_tree.column('Nombre', width=200)
+        self.rutinas_tree.column('Nombre', width=200, anchor='center')
         self.rutinas_tree.column('Nivel', width=100, anchor='center')
         self.rutinas_tree.column('Ejercicios', width=100, anchor='center')
-        self.rutinas_tree.column('Creado Por', width=150)
+        self.rutinas_tree.column('Creado Por', width=150, anchor='center')
         self.rutinas_tree.column('Fecha Creación', width=120, anchor='center')
         
-        # Scrollbars
         v_scrollbar = ttk.Scrollbar(table_frame, orient='vertical', command=self.rutinas_tree.yview)
         self.rutinas_tree.configure(yscrollcommand=v_scrollbar.set)
         
-        # Empaquetar
         self.rutinas_tree.pack(side='left', fill='both', expand=True)
         v_scrollbar.pack(side='right', fill='y')
         
@@ -4372,7 +4517,6 @@ class GimnasioApp:
         
         ttk.Button(buttons_frame, text=f"💾 {'Crear Rutina Completa' if modo == 'crear' else 'Guardar Cambios'}", 
                 command=lambda: self.guardar_rutina_final(modo)).pack(side='right')
-
 
     def agregar_ejercicio_a_lista(self):
         """Agrega ejercicio a la lista de la rutina"""
@@ -4852,7 +4996,7 @@ class GimnasioApp:
         if not self.verificar_permisos(['admin_principal', 'secretaria']):
             return
         
-        self.activar_boton_menu(self.botones_menu[4])
+        self.activar_boton_por_comando(self.abrir_gestion_egresos)
 
         self.mostrar_gestion_egresos()
 
@@ -4861,18 +5005,29 @@ class GimnasioApp:
         self.limpiar_area_trabajo()
         self.egresos_data = []
 
-        # Título
-        title_frame = ttk.Frame(self.work_frame)
-        title_frame.pack(fill='x', pady=(0, 20))
-        ttk.Label(title_frame, text="💸 GESTIÓN DE EGRESOS", font=('Segoe UI', 18, 'bold')).pack(side='left')
-        
-        # Frame de Controles
-        controls_frame = ttk.Frame(self.work_frame)
-        controls_frame.pack(fill='x', pady=(0, 10))
-        
-        ttk.Button(controls_frame, text="🔄 Actualizar", command=self.cargar_egresos).pack(side='right', padx=5)
-        ttk.Button(controls_frame, text="➕ Registrar Egreso", command=self._registrar_nuevo_egreso_action).pack(side='right', padx=5)
-        
+
+        header_frame = ttk.Frame(self.work_frame)
+        header_frame.pack(fill='x', pady=(0, 20))
+
+        title_container = ttk.Frame(header_frame)
+        title_container.pack(side='left')
+
+        money_icon = self.crear_icono("money-bill-wave", tamaño=20, color="#1F0E45")
+        if money_icon:
+            icon_label = ttk.Label(title_container, image=money_icon)
+            icon_label.pack(side='left', padx=(0, 8))
+
+        ttk.Label(title_container, text="GESTIÓN DE EGRESOS", font=('Segoe UI', 18, 'bold')).pack(side='left')
+
+        buttons_container = ttk.Frame(header_frame)
+        buttons_container.pack(side='right')
+
+        refresh_icon = self.crear_icono("sync-alt", tamaño=16, color="black")
+        ttk.Button(buttons_container, text="Actualizar", image=refresh_icon, compound='left', command=self.cargar_egresos).pack(side='left', padx=5)
+
+        plus_icon = self.crear_icono("plus", tamaño=16, color="black")
+        ttk.Button(buttons_container, text="Registrar Egreso", image=plus_icon, compound='left', command=self._registrar_nuevo_egreso_action).pack(side='left', padx=5)
+
         # Tabla de Egresos
         self.crear_tabla_egresos()
         
@@ -4891,8 +5046,8 @@ class GimnasioApp:
         
         for col, width in col_widths.items():
             self.egresos_tree.heading(col, text=col)
-            self.egresos_tree.column(col, width=width, anchor='w')
-        self.egresos_tree.column('Monto', anchor='e')
+            self.egresos_tree.column(col, width=width, anchor='center')
+        self.egresos_tree.column('Monto', anchor='center')
 
         v_scroll = ttk.Scrollbar(table_frame, orient='vertical', command=self.egresos_tree.yview)
         
@@ -5018,6 +5173,21 @@ class GimnasioApp:
             self.cargar_egresos() # Recargar la tabla
         else:
             messagebox.showerror("Error", resultado['message'])
+
+
+    def activar_boton_por_comando(self, comando_objetivo):
+        """Activa el botón que tiene el comando especificado"""
+        for i, btn in enumerate(self.botones_menu):
+            try:
+                if btn.cget('command') == comando_objetivo:
+                    # Desactivar todos los botones
+                    for b in self.botones_menu:
+                        b.configure(fg_color='#dcdad5')
+                    # Activar el botón correcto
+                    btn.configure(fg_color="#CCFF00")
+                    break
+            except:
+                continue
     
     def run(self):
         """Ejecuta la aplicación"""

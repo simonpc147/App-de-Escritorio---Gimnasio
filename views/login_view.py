@@ -13,35 +13,28 @@ class LoginView:
         self.auth_controller = auth_controller
         self.main_view_callback = main_view_callback
         
-        # Variables de control
         self.intentos_login = 0
-        self.max_intentos = 5
-        self.tiempo_bloqueo = 300  # 5 minutos
+        self.max_intentos = 10
+        self.tiempo_bloqueo = 300  
         self.bloqueado_hasta = None
         
-        # Variables de UI
         self.email_var = tk.StringVar()
         self.password_var = tk.StringVar()
         self.remember_var = tk.BooleanVar()
         self.show_password_var = tk.BooleanVar()
         
-        # Configurar estilos específicos del login
         self.configurar_estilos()
         
-        # Crear la interfaz
         self.crear_interfaz()
         
-        # Cargar credenciales guardadas si existen
         self.cargar_credenciales_guardadas()
         
-        # Configurar eventos
         self.configurar_eventos()
     
     def configurar_estilos(self):
         """Configura estilos específicos para ATHENA GYM & BOX"""
         self.style = ttk.Style()
         
-        # Colores oficiales de ATHENA GYM & BOX
         self.colores = {
             'verde_lima': '#CCFF00',               # Verde lima principal
             'morado': '#660066',                   # Morado oficial
@@ -166,28 +159,24 @@ class LoginView:
     
     def crear_header(self):
         """Crea el header con logo y título de ATHENA"""
-        # Frame del header
         header_frame = ttk.Frame(self.center_container, style='Login.TFrame')
-        header_frame.pack(pady=(40, 30))
+        header_frame.pack(pady=(10, 0))
         
-        # Crear logo de ATHENA (versión simplificada)
         self.crear_logo_athena(header_frame)
         
     
     def crear_logo_athena(self, parent):
         """Carga el logo real de ATHENA"""
         logo_frame = ttk.Frame(parent, style='Login.TFrame')
-        logo_frame.pack(pady=(0, 10))
+        logo_frame.pack(pady=(0, 0))
         
       
         logo_image = Image.open('assets/logo_athena.png')
 
         
-        # Redimensionar manteniendo proporción
         logo_image = logo_image.resize((280, 200), Image.Resampling.LANCZOS)
         self.logo_photo = ImageTk.PhotoImage(logo_image)
         
-        # Crear label con la imagen
         logo_label = tk.Label(
             logo_frame,
             image=self.logo_photo,
@@ -199,11 +188,9 @@ class LoginView:
 
     def crear_formulario_login(self):
         """Crea el formulario de login"""
-        # Tarjeta principal del formulario con borde elegante
         self.card_frame = ttk.Frame(self.center_container, style='LoginCard.TFrame', padding=50)
         self.card_frame.pack(pady=10, padx=10)
         
-        # Agregar borde decorativo en lugar de sombra
         border_frame = tk.Frame(
             self.center_container,
             bg=self.colores['verde_lima'],
@@ -213,19 +200,14 @@ class LoginView:
         self.card_frame.lift()
     
         
-        # Campo de email
         self.crear_campo_email()
         
-        # Campo de contraseña
         self.crear_campo_password()
         
-        # Opciones adicionales
         self.crear_opciones_adicionales()
         
-        # Botones
         self.crear_botones()
         
-        # Información de estado
         self.crear_info_estado()
     
     def crear_campo_email(self):
@@ -315,7 +297,7 @@ class LoginView:
             options_frame,
             text="¿Olvidaste tu contraseña?",
             foreground=self.colores['morado'],
-            background=self.colores['blanco'],  # Fondo blanco
+            background=self.colores['blanco'],  
             font=('Arial', 9, 'underline'),
             cursor='hand2'
         )
@@ -325,7 +307,7 @@ class LoginView:
     def crear_botones(self):
         """Crea los botones del formulario"""
         buttons_frame = ttk.Frame(self.card_frame, style='LoginCard.TFrame')
-        buttons_frame.pack(fill='x', pady=(0, 20))
+        buttons_frame.pack(fill='x', pady=(0, 10))
         
         # Botón principal de login
         self.login_button = ttk.Button(
@@ -348,23 +330,20 @@ class LoginView:
         self.status_frame = ttk.Frame(self.card_frame, style='LoginCard.TFrame')
         self.status_frame.pack(fill='x')
         
-        # Label de estado (inicialmente oculto)
         self.status_label = ttk.Label(
             self.status_frame,
             text="",
-            background=self.colores['blanco'],  # Fondo blanco
+            background=self.colores['blanco'],  
             font=('Arial', 10),
             wraplength=400
         )
         self.status_label.pack()
         
-        # Barra de progreso (para cargas) - colores de  
         self.progress_bar = ttk.Progressbar(
             self.status_frame,
             mode='indeterminate',
             length=400
         )
-        # Personalizar colores de la barra de progreso
         self.style.configure(
             'TProgressbar',
             background=self.colores['verde_lima'],
@@ -374,7 +353,7 @@ class LoginView:
     def crear_footer(self):
         """Crea el footer con información de ATHENA"""
         footer_frame = ttk.Frame(self.center_container, style='Login.TFrame')
-        footer_frame.pack(side='bottom', pady=5)
+        footer_frame.pack(side='bottom', pady=0)
         
         # Información del sistema
         info_text = "FORJA TU FUERZA | SUPERA TUS LÍMITES | ATHENA GYM & BOX 2024"
